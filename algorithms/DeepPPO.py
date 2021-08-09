@@ -1,8 +1,3 @@
-# Author: Aqeel Anwar(ICSRL)
-# Created: 10/4/2020, 10:43 PM
-# Email: aqeel.anwar@gatech.edu
-
-
 import sys, cv2
 import nvidia_smi
 from network.agent import PedraAgent
