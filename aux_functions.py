@@ -1,6 +1,3 @@
-# Author: Aqeel Anwar(ICSRL)
-# Created: 10/14/2019, 12:50 PM
-# Email: aqeel.anwar@gatech.edu
 import numpy as np
 import nvidia_smi
 import os, subprocess, psutil
@@ -134,57 +131,6 @@ def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent
     return err
 
 
-def train_REINFORCE(data_tuple, batch_size, agent, lr, input_size, gamma, epi_num):
-    episode_len = len(data_tuple)
-
-    curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
-    actions = np.zeros(shape=(episode_len), dtype=int)
-    crashes = np.zeros(shape=(episode_len))
-    rewards = np.zeros(shape=episode_len)
-
-    for ii, m in enumerate(data_tuple):
-        curr_state_m, action_m, reward_m, crash_m = m
-        curr_states[ii, :, :, :] = curr_state_m[...]
-        actions[ii] = action_m
-        rewards[ii] = reward_m
-        crashes[ii] = crash_m
-
-    Gs = np.zeros(episode_len)
-    r = 0
-    for episode_step in range(episode_len - 1, -1, -1):
-        r = rewards[episode_step] + r * gamma
-        Gs[episode_step] = r
-
-    # Normalize the reward to reduce variance in training
-    Gs -= np.mean(Gs)
-    Gs /= (np.std(Gs) + 1e-8)
-
-    num_batches = int(np.ceil(episode_len / batch_size))
-    for i in range(num_batches):
-        if i != num_batches - 1:
-            x = curr_states[i * batch_size:(i + 1) * batch_size, :, :, :]
-            G = Gs[i * batch_size:(i + 1) * batch_size]
-            action = actions[i * batch_size:(i + 1) * batch_size]
-        else:
-            x = curr_states[i * batch_size:, :, :, :]
-            G = Gs[i * batch_size:]
-            action = actions[i * batch_size:]
-
-        G = np.array([G])
-        G = G.T
-
-        # Restructure array
-        action = np.array([action])
-        action = action.T
-
-        # Get the baseline value
-        B = agent.network_model.get_baseline(x)
-        # Train the baseline network
-        B_ = agent.network_model.train_baseline(x, G, action, lr, epi_num)
-        # Train policy network
-        agent.network_model.train_policy(x, action, B, G, lr, epi_num)
-
-
 def train_PPO(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num):
     batch_size = algorithm_cfg.batch_size
     train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
@@ -302,11 +248,6 @@ def minibatch_double(data_tuple, batch_size, choose, ReplayMemory, input_size, a
     err = abs(TD)  # or abs(TD_clip)
     return curr_states, Q_target, actions, err, idx
 
-
-def policy_REINFORCE(curr_state, agent):
-    action = agent.network_model.action_selection(curr_state)
-    action_type = 'Prob'
-    return action[0], action_type
 
 def policy_PPO(curr_state, agent):
     action, p_a = agent.network_model.action_selection_with_prob(curr_state)
@@ -449,47 +390,6 @@ def get_CustomImage(client, vehicle_name, camera_name):
     return camera_image
 
 
-# def get_image(client, vehicle_name, camera_type, first_frame, last_frame):
-#     responses1 = client.simGetImages([  # depth visualization image
-#         airsim.ImageRequest("1", airsim.ImageType.Scene, False,
-#                             False)], vehicle_name=vehicle_name)  # scene vision image in uncompressed RGBA array
-#
-#     response = responses1[0]
-#     img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)  # get numpy array
-#     img_rgba = img1d.reshape(response.height, response.width, 3)
-#     img = Image.fromarray(img_rgba)
-#     img_rgb = img.convert('RGB')
-#     camera_image_rgb = np.asarray(img_rgb)
-#
-#     if camera_type == 'optical':
-#         camera_image = camera_image_rgb
-#
-#     if camera_type == 'DVS':
-#         # camera_image = cv2.normalize(camera_image_rgb, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-#         frame1 = cv2.cvtColor(camera_image_rgb, cv2.COLOR_BGR2GRAY)
-#         # frame23 = cv2.normalize(frame1, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-#         frame = np.uint8(np.log1p(frame1))
-#         frame = cv2.normalize(frame, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-#
-#         if first_frame:
-#             camera_image = frame
-#             first_frame = False
-#         else:
-#             camera_image = frame - last_frame
-#         # ret, thresh1 = cv2.threshold(display_frame, 0.2, 0.8, cv2.THRESH_BINARY)
-#         # display_frame1 = cv2.bitwise_and(display_frame, thresh1)
-#         last_frame = frame
-#
-#         camera_image = random_noise(camera_image, mode='s&p', amount=0.005)
-#         camera_image = cv2.cvtColor(camera_image, cv2.COLOR_GRAY2BGR)
-#
-#         cv2.imshow('rgb', camera_image_rgb)
-#         cv2.imshow('dvs', camera_image)
-#         cc=1
-
-# return camera_image, first_frame, last_frame
-
-
 def blit_text(surface, text, pos, font, color=pygame.Color('black')):
     words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
     space = font.size(' ')[0]  # The width of a space.
@@ -521,15 +421,6 @@ def pygame_connect(phase):
 
     screen.blit(img, (0, 0))
     pygame.display.set_caption('DLwithTL')
-    # screen.fill((21, 116, 163))
-    # text = 'Supported Keys:\n'
-    # font = pygame.font.SysFont('arial', 32)
-    # blit_text(screen, text, (20, 20), font, color = (214, 169, 19))
-    # pygame.display.update()
-    #
-    # font = pygame.font.SysFont('arial', 24)
-    # text = 'R - Reconnect unreal\nbackspace - Pause/play\nL - Update configurations\nEnter - Save Network'
-    # blit_text(screen, text, (20, 70), font, color=(214, 169, 19))
     pygame.display.update()
 
     return screen

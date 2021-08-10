@@ -202,3 +202,12 @@ class initialize_network_DeepPPO():
 
     def load_network(self, load_path):
         self.saver.restore(self.sess, load_path)
+
+
+
+###########################################################################
+# DeepPPG: Class
+###########################################################################
+
+class initialize_network_DeepPPG():
+    def __init__(self, cfg, name, vehicle_name):
