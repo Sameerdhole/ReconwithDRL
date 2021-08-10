@@ -12,13 +12,9 @@ from PIL import Image
 import cv2
 from skimage.util import random_noise
 
-
-def close_env(env_process):
-    process = psutil.Process(env_process.pid)
-    for proc in process.children(recursive=True):
-        proc.kill()
-    process.kill()
-
+##############################################################################################################
+#GENERAL FUNCTIONS
+##############################################################################################################
 
 def save_network_path(cfg, algorithm_cfg):
     # Save the network to the directory network_path
@@ -32,7 +28,6 @@ def save_network_path(cfg, algorithm_cfg):
         os.makedirs(algorithm_cfg.network_path)
 
     return cfg, algorithm_cfg
-
 
 def communicate_across_agents(agent, name_agent_list, algorithm_cfg):
     name_agent = name_agent_list[0]
@@ -61,19 +56,6 @@ def communicate_across_agents(agent, name_agent_list, algorithm_cfg):
             agent[name_agent].network_model.initialize_graphs_with_average(agent, agent_on_same_network)
 
     return update_done
-
-
-def start_environment(env_name):
-    print_orderly('Environment', 80)
-    env_folder = os.path.dirname(os.path.abspath(__file__)) + "/unreal_envs/" + env_name + "/"
-    path = env_folder + env_name + ".exe"
-    # env_process = []
-    env_process = subprocess.Popen(path)
-    time.sleep(5)
-    print("Successfully loaded environment: " + env_name)
-
-    return env_process, env_folder
-
 
 def initialize_infer(env_cfg, client, env_folder):
     if not os.path.exists(env_folder + 'results'):
@@ -104,7 +86,6 @@ def initialize_infer(env_cfg, client, env_folder):
 
     return p_z, f_z, fig_z, ax_z, line_z, fig_nav, ax_nav, nav
 
-
 def translate_action(action, num_actions):
     # action_word = ['Forward', 'Right', 'Left', 'Sharp Right', 'Sharp Left']
     sqrt_num_actions = np.sqrt(num_actions)
@@ -122,137 +103,6 @@ def translate_action(action, num_actions):
         h_ind] + str(int(np.ceil(abs((sqrt_num_actions - 1) / 2 - h_ind))))
 
     return action_word
-
-
-def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
-    _, Q_target, _, err, _ = minibatch_double(data_tuple, len(data_tuple), choose, ReplayMemory, input_size, agent,
-                                              target_agent, gamma, Q_clip)
-
-    return err
-
-
-def train_PPO(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num):
-    batch_size = algorithm_cfg.batch_size
-    train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
-    lmbda = algorithm_cfg.lmbda
-    # # Divide the data tuple in PPO_steps
-    # ppo_steps = 3
-    # for i in range(int(np.ceil(len(data_tuple) / float(ppo_steps)))):
-    #     print(i)
-    #     start_ind = i * ppo_steps
-    #     end_ind = np.min((len(data_tuple), (i + 1) * ppo_steps))
-    #     data_sub = data_tuple[start_ind: end_ind]
-    #
-    #
-    episode_len_total = len(data_tuple_total)
-    num_batches = int(np.ceil(episode_len_total / float(batch_size)))
-    for i in range(num_batches):
-        start_ind = i * batch_size
-        end_ind = np.min((len(data_tuple_total), (i + 1) * batch_size))
-        data_tuple = data_tuple_total[start_ind: end_ind]
-        episode_len = len(data_tuple)
-
-        curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
-        next_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
-        actions = np.zeros(shape=(episode_len, 1), dtype=int)
-        crashes = np.zeros(shape=(episode_len, 1))
-        rewards = np.zeros(shape=(episode_len, 1))
-        p_a = np.zeros(shape=(episode_len,1))
-
-        for ii, m in enumerate(data_tuple):
-            curr_state_m, action_m, next_state_m, reward_m, p_a_m, crash_m = m
-            curr_states[ii, :, :, :] = curr_state_m[...]
-            next_states[ii, :, :, :] = next_state_m[...]
-            actions[ii] = action_m
-            rewards[ii] = reward_m
-            p_a[ii] = p_a_m
-            crashes[ii] = ~crash_m
-
-        for i in range(train_epoch_per_batch):
-            V_s = agent.network_model.get_state_value(curr_states)
-            V_s_ = agent.network_model.get_state_value(next_states)
-            TD_target = rewards + gamma*V_s_* crashes
-            delta = TD_target - V_s
-
-            GAE_array = []
-            GAE=0
-            for delta_t in delta[::-1]:
-                GAE = gamma*lmbda* GAE + delta_t
-                GAE_array.append(GAE)
-
-            GAE_array.reverse()
-            GAE = np.array(GAE_array)
-            # Normalize the reward to reduce variance in training
-            GAE -= np.mean(GAE)
-            GAE /= (np.std(GAE) + 1e-8)
-            # TODO: zero mean unit std GAE
-            agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num)
-
-
-def minibatch_double(data_tuple, batch_size, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
-    # Needs NOT to be in DeepAgent
-    # NO TD error term, and using huber loss instead
-    # Bellman Optimality equation update, with less computation, updated
-
-    if batch_size == 1:
-        train_batch = data_tuple
-        idx = None
-    else:
-        batch = ReplayMemory.sample(batch_size)
-        train_batch = np.array([b[1][0] for b in batch])
-        idx = [b[0] for b in batch]
-
-    actions = np.zeros(shape=(batch_size), dtype=int)
-    crashes = np.zeros(shape=(batch_size))
-    rewards = np.zeros(shape=batch_size)
-    curr_states = np.zeros(shape=(batch_size, input_size, input_size, 3))
-    new_states = np.zeros(shape=(batch_size, input_size, input_size, 3))
-    for ii, m in enumerate(train_batch):
-        curr_state_m, action_m, new_state_m, reward_m, crash_m = m
-        curr_states[ii, :, :, :] = curr_state_m[...]
-        actions[ii] = action_m
-        new_states[ii, :, :, :] = new_state_m
-        rewards[ii] = reward_m
-        crashes[ii] = crash_m
-
-    #
-    # oldQval = np.zeros(shape = [batch_size, num_actions])
-    if choose:
-        oldQval_A = target_agent.network_model.Q_val(curr_states)
-        newQval_A = target_agent.network_model.Q_val(new_states)
-        newQval_B = agent.network_model.Q_val(new_states)
-    else:
-        oldQval_A = agent.network_model.Q_val(curr_states)
-        newQval_A = agent.network_model.Q_val(new_states)
-        newQval_B = target_agent.network_model.Q_val(new_states)
-
-    TD = np.zeros(shape=[batch_size])
-    err = np.zeros(shape=[batch_size])
-    Q_target = np.zeros(shape=[batch_size])
-
-    term_ind = np.where(rewards == -1)[0]
-    nonterm_ind = np.where(rewards != -1)[0]
-
-    TD[nonterm_ind] = rewards[nonterm_ind] + gamma * newQval_B[nonterm_ind, np.argmax(newQval_A[nonterm_ind], axis=1)] - \
-                      oldQval_A[nonterm_ind, actions[nonterm_ind].astype(int)]
-    TD[term_ind] = rewards[term_ind]
-
-    if Q_clip:
-        TD_clip = np.clip(TD, -1, 1)
-    else:
-        TD_clip = TD
-
-    Q_target[nonterm_ind] = oldQval_A[nonterm_ind, actions[nonterm_ind].astype(int)] + TD_clip[nonterm_ind]
-    Q_target[term_ind] = TD_clip[term_ind]
-
-    err = abs(TD)  # or abs(TD_clip)
-    return curr_states, Q_target, actions, err, idx
-
-
-def policy_PPO(curr_state, agent):
-    action, p_a = agent.network_model.action_selection_with_prob(curr_state)
-    action_type = 'Prob'
-    return action[0], p_a, action_type
 
 def policy(epsilon, curr_state, iter, b, epsilon_model, wait_before_train, num_actions, agent):
     qvals = []
@@ -279,135 +129,9 @@ def policy(epsilon, curr_state, iter, b, epsilon_model, wait_before_train, num_a
         # print(action_array/(np.mean(action_array)))
     return action, action_type, epsilon, qvals
 
-
-def reset_to_initial(level, reset_array, client, vehicle_name):
-    reset_pos = reset_array[vehicle_name][level]
-    client.simSetVehiclePose(reset_pos, ignore_collison=True, vehicle_name=vehicle_name)
-    time.sleep(0.1)
-
-
-def print_orderly(str, n):
-    print('')
-    hyphens = '-' * int((n - len(str)) / 2)
-    print(hyphens + ' ' + str + ' ' + hyphens)
-
-
-def connect_drone(ip_address='127.0.0.0', phase='infer', num_agents=1, client=[]):
-    if client != []:
-        client.reset()
-    print_orderly('Drone', 80)
-    client = airsim.MultirotorClient(ip=ip_address, timeout_value=10)
-    client.confirmConnection()
-    time.sleep(1)
-
-    old_posit = {}
-    for agents in range(num_agents):
-        name_agent = "drone" + str(agents)
-        client.enableApiControl(True, name_agent)
-        client.armDisarm(True, name_agent)
-        # time.sleep(1)
-        client.takeoffAsync(vehicle_name=name_agent)
-        time.sleep(1)
-        old_posit[name_agent] = client.simGetVehiclePose(vehicle_name=name_agent)
-
-    initZ = old_posit[name_agent].position.z_val
-
-    # client.enableApiControl(True)
-    # client.armDisarm(True)
-    # client.takeoffAsync().join()
-
-    return client, old_posit, initZ
-
-
-def get_SystemStats(process, NVIDIA_GPU):
-    if NVIDIA_GPU:
-        deviceCount = nvidia_smi.nvmlDeviceGetCount()
-        gpu_memory = []
-        gpu_utilization = []
-        for i in range(0, deviceCount):
-            handle = nvidia_smi.nvmlDeviceGetHandleByIndex(i)
-            gpu_stat = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-            gpu_memory.append(gpu_stat.memory)
-            gpu_utilization.append(gpu_stat.gpu)
-    else:
-        gpu_memory = []
-        gpu_utilization = []
-
-    sys_memory = process.memory_info()[0] / 2. ** 30
-
-    return gpu_memory, gpu_utilization, sys_memory
-
-
-def get_MonocularImageRGB(client, vehicle_name):
-    responses1 = client.simGetImages([
-        airsim.ImageRequest('front_center', airsim.ImageType.Scene, False,
-                            False)], vehicle_name=vehicle_name)  # scene vision image in uncompressed RGBA array
-
-    response = responses1[0]
-    img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)  # get numpy array
-    img_rgba = img1d.reshape(response.height, response.width, 3)
-    img = Image.fromarray(img_rgba)
-    img_rgb = img.convert('RGB')
-    camera_image_rgb = np.asarray(img_rgb)
-    camera_image = camera_image_rgb
-
-    return camera_image
-
-
-def get_StereoImageRGB(client, vehicle_name):
-    camera_image = []
-    responses = client.simGetImages(
-        [
-            airsim.ImageRequest('front_left', airsim.ImageType.Scene, False, False),
-            airsim.ImageRequest('front_right', airsim.ImageType.Scene, False, False)
-        ], vehicle_name=vehicle_name)
-
-    for i in range(2):
-        response = responses[i]
-        img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)  # get numpy array
-        img_rgba = img1d.reshape(response.height, response.width, 3)
-        img = Image.fromarray(img_rgba)
-        img_rgb = img.convert('RGB')
-        camera_image_rgb = np.asarray(img_rgb)
-        camera_image.append(camera_image_rgb)
-
-    return camera_image
-
-
-def get_CustomImage(client, vehicle_name, camera_name):
-    responses1 = client.simGetImages([
-        airsim.ImageRequest(camera_name, airsim.ImageType.Scene, False,
-                            False)], vehicle_name=vehicle_name)  # scene vision image in uncompressed RGBA array
-
-    response = responses1[0]
-    img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)  # get numpy array
-    img_rgba = img1d.reshape(response.height, response.width, 3)
-    img = Image.fromarray(img_rgba)
-    img_rgb = img.convert('RGB')
-    camera_image_rgb = np.asarray(img_rgb)
-    camera_image = camera_image_rgb
-
-    return camera_image
-
-
-def blit_text(surface, text, pos, font, color=pygame.Color('black')):
-    words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
-    space = font.size(' ')[0]  # The width of a space.
-    max_width, max_height = surface.get_size()
-    x, y = pos
-    for line in words:
-        for word in line:
-            word_surface = font.render(word, 0, color)
-            word_width, word_height = word_surface.get_size()
-            if x + word_width >= max_width:
-                x = pos[0]  # Reset the x.
-                y += word_height  # Start on new row.
-            surface.blit(word_surface, (x, y))
-            x += word_width + space
-        x = pos[0]  # Reset the x.
-        y += word_height  # Start on new row.
-
-
+#######################################################################################################
+#PYGAME FUNCTIONS
+#######################################################################################################
 def pygame_connect(phase):
     pygame.init()
 
@@ -424,7 +148,6 @@ def pygame_connect(phase):
     pygame.display.update()
 
     return screen
-
 
 def check_user_input(active, automate, agent, client, old_posit, initZ, fig_z, fig_nav, env_folder, cfg, algorithm_cfg):
     # algorithm_cfg.learning_rate, algorithm_cfg.epsilon,algorithm_cfg.network_path,cfg.mode,
@@ -498,3 +221,273 @@ def check_user_input(active, automate, agent, client, old_posit, initZ, fig_z, f
                 automate = automate ^ True
 
     return active, automate, algorithm_cfg, client
+    
+#######################################################################################################
+#AIRSIM FUNCTIONS
+#######################################################################################################
+def connect_drone(ip_address='127.0.0.0', phase='infer', num_agents=1, client=[]):
+    if client != []:
+        client.reset()
+    print_orderly('Drone', 80)
+    client = airsim.MultirotorClient(ip=ip_address, timeout_value=10)
+    client.confirmConnection()
+    time.sleep(1)
+
+    old_posit = {}
+    for agents in range(num_agents):
+        name_agent = "drone" + str(agents)
+        client.enableApiControl(True, name_agent)
+        client.armDisarm(True, name_agent)
+        # time.sleep(1)
+        client.takeoffAsync(vehicle_name=name_agent)
+        time.sleep(1)
+        old_posit[name_agent] = client.simGetVehiclePose(vehicle_name=name_agent)
+
+    initZ = old_posit[name_agent].position.z_val
+
+    # client.enableApiControl(True)
+    # client.armDisarm(True)
+    # client.takeoffAsync().join()
+
+    return client, old_posit, initZ
+
+def reset_to_initial(level, reset_array, client, vehicle_name):
+    reset_pos = reset_array[vehicle_name][level]
+    client.simSetVehiclePose(reset_pos, ignore_collison=True, vehicle_name=vehicle_name)
+    time.sleep(0.1)
+
+def get_MonocularImageRGB(client, vehicle_name):
+    responses1 = client.simGetImages([
+        airsim.ImageRequest('front_center', airsim.ImageType.Scene, False,
+                            False)], vehicle_name=vehicle_name)  # scene vision image in uncompressed RGBA array
+
+    response = responses1[0]
+    img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)  # get numpy array
+    img_rgba = img1d.reshape(response.height, response.width, 3)
+    img = Image.fromarray(img_rgba)
+    img_rgb = img.convert('RGB')
+    camera_image_rgb = np.asarray(img_rgb)
+    camera_image = camera_image_rgb
+
+    return camera_image
+
+def get_StereoImageRGB(client, vehicle_name):
+    camera_image = []
+    responses = client.simGetImages(
+        [
+            airsim.ImageRequest('front_left', airsim.ImageType.Scene, False, False),
+            airsim.ImageRequest('front_right', airsim.ImageType.Scene, False, False)
+        ], vehicle_name=vehicle_name)
+
+    for i in range(2):
+        response = responses[i]
+        img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)  # get numpy array
+        img_rgba = img1d.reshape(response.height, response.width, 3)
+        img = Image.fromarray(img_rgba)
+        img_rgb = img.convert('RGB')
+        camera_image_rgb = np.asarray(img_rgb)
+        camera_image.append(camera_image_rgb)
+
+    return camera_image
+
+def get_CustomImage(client, vehicle_name, camera_name):
+    responses1 = client.simGetImages([
+        airsim.ImageRequest(camera_name, airsim.ImageType.Scene, False,
+                            False)], vehicle_name=vehicle_name)  # scene vision image in uncompressed RGBA array
+
+    response = responses1[0]
+    img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)  # get numpy array
+    img_rgba = img1d.reshape(response.height, response.width, 3)
+    img = Image.fromarray(img_rgba)
+    img_rgb = img.convert('RGB')
+    camera_image_rgb = np.asarray(img_rgb)
+    camera_image = camera_image_rgb
+
+    return camera_image
+
+########################################################################################################
+# UNREAL ENVIRONMENT FUNCTIONS 
+########################################################################################################
+def close_env(env_process):
+    process = psutil.Process(env_process.pid)
+    for proc in process.children(recursive=True):
+        proc.kill()
+    process.kill()
+
+def start_environment(env_name):
+    print_orderly('Environment', 80)
+    env_folder = os.path.dirname(os.path.abspath(__file__)) + "/unreal_envs/" + env_name + "/"
+    path = env_folder + env_name + ".exe"
+    # env_process = []
+    env_process = subprocess.Popen(path)
+    time.sleep(5)
+    print("Successfully loaded environment: " + env_name)
+
+    return env_process, env_folder
+########################################################################################################
+#PPO Policy Functions
+########################################################################################################
+def policy_PPO(curr_state, agent):
+    action, p_a = agent.network_model.action_selection_with_prob(curr_state)
+    action_type = 'Prob'
+    return action[0], p_a, action_type
+
+def train_PPO(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num):
+    batch_size = algorithm_cfg.batch_size
+    train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
+    lmbda = algorithm_cfg.lmbda
+    episode_len_total = len(data_tuple_total)
+    num_batches = int(np.ceil(episode_len_total / float(batch_size)))
+    for i in range(num_batches):
+        start_ind = i * batch_size
+        end_ind = np.min((len(data_tuple_total), (i + 1) * batch_size))
+        data_tuple = data_tuple_total[start_ind: end_ind]
+        episode_len = len(data_tuple)
+
+        curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+        next_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+        actions = np.zeros(shape=(episode_len, 1), dtype=int)
+        crashes = np.zeros(shape=(episode_len, 1))
+        rewards = np.zeros(shape=(episode_len, 1))
+        p_a = np.zeros(shape=(episode_len,1))
+
+        for ii, m in enumerate(data_tuple):
+            curr_state_m, action_m, next_state_m, reward_m, p_a_m, crash_m = m
+            curr_states[ii, :, :, :] = curr_state_m[...]
+            next_states[ii, :, :, :] = next_state_m[...]
+            actions[ii] = action_m
+            rewards[ii] = reward_m
+            p_a[ii] = p_a_m
+            crashes[ii] = ~crash_m
+
+        for i in range(train_epoch_per_batch):
+            V_s = agent.network_model.get_state_value(curr_states)
+            V_s_ = agent.network_model.get_state_value(next_states)
+            TD_target = rewards + gamma*V_s_* crashes
+            delta = TD_target - V_s
+
+            GAE_array = []
+            GAE=0
+            for delta_t in delta[::-1]:
+                GAE = gamma*lmbda* GAE + delta_t
+                GAE_array.append(GAE)
+
+            GAE_array.reverse()
+            GAE = np.array(GAE_array)
+            # Normalize the reward to reduce variance in training
+            GAE -= np.mean(GAE)
+            GAE /= (np.std(GAE) + 1e-8)
+            # TODO: zero mean unit std GAE
+            agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num)
+
+def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
+    _, Q_target, _, err, _ = minibatch_double(data_tuple, len(data_tuple), choose, ReplayMemory, input_size, agent,
+                                              target_agent, gamma, Q_clip)
+
+    return err
+
+def minibatch_double(data_tuple, batch_size, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
+    # Needs NOT to be in DeepAgent
+    # NO TD error term, and using huber loss instead
+    # Bellman Optimality equation update, with less computation, updated
+
+    if batch_size == 1:
+        train_batch = data_tuple
+        idx = None
+    else:
+        batch = ReplayMemory.sample(batch_size)
+        train_batch = np.array([b[1][0] for b in batch])
+        idx = [b[0] for b in batch]
+
+    actions = np.zeros(shape=(batch_size), dtype=int)
+    crashes = np.zeros(shape=(batch_size))
+    rewards = np.zeros(shape=batch_size)
+    curr_states = np.zeros(shape=(batch_size, input_size, input_size, 3))
+    new_states = np.zeros(shape=(batch_size, input_size, input_size, 3))
+    for ii, m in enumerate(train_batch):
+        curr_state_m, action_m, new_state_m, reward_m, crash_m = m
+        curr_states[ii, :, :, :] = curr_state_m[...]
+        actions[ii] = action_m
+        new_states[ii, :, :, :] = new_state_m
+        rewards[ii] = reward_m
+        crashes[ii] = crash_m
+
+    #
+    # oldQval = np.zeros(shape = [batch_size, num_actions])
+    if choose:
+        oldQval_A = target_agent.network_model.Q_val(curr_states)
+        newQval_A = target_agent.network_model.Q_val(new_states)
+        newQval_B = agent.network_model.Q_val(new_states)
+    else:
+        oldQval_A = agent.network_model.Q_val(curr_states)
+        newQval_A = agent.network_model.Q_val(new_states)
+        newQval_B = target_agent.network_model.Q_val(new_states)
+
+    TD = np.zeros(shape=[batch_size])
+    err = np.zeros(shape=[batch_size])
+    Q_target = np.zeros(shape=[batch_size])
+
+    term_ind = np.where(rewards == -1)[0]
+    nonterm_ind = np.where(rewards != -1)[0]
+
+    TD[nonterm_ind] = rewards[nonterm_ind] + gamma * newQval_B[nonterm_ind, np.argmax(newQval_A[nonterm_ind], axis=1)] - \
+                      oldQval_A[nonterm_ind, actions[nonterm_ind].astype(int)]
+    TD[term_ind] = rewards[term_ind]
+
+    if Q_clip:
+        TD_clip = np.clip(TD, -1, 1)
+    else:
+        TD_clip = TD
+
+    Q_target[nonterm_ind] = oldQval_A[nonterm_ind, actions[nonterm_ind].astype(int)] + TD_clip[nonterm_ind]
+    Q_target[term_ind] = TD_clip[term_ind]
+
+    err = abs(TD)  # or abs(TD_clip)
+    return curr_states, Q_target, actions, err, idx
+
+##############################################################################################################
+#HELPER FUNCTION
+##############################################################################################################
+def print_orderly(str, n):
+    print('')
+    hyphens = '-' * int((n - len(str)) / 2)
+    print(hyphens + ' ' + str + ' ' + hyphens)
+
+def get_SystemStats(process, NVIDIA_GPU):
+    if NVIDIA_GPU:
+        deviceCount = nvidia_smi.nvmlDeviceGetCount()
+        gpu_memory = []
+        gpu_utilization = []
+        for i in range(0, deviceCount):
+            handle = nvidia_smi.nvmlDeviceGetHandleByIndex(i)
+            gpu_stat = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
+            gpu_memory.append(gpu_stat.memory)
+            gpu_utilization.append(gpu_stat.gpu)
+    else:
+        gpu_memory = []
+        gpu_utilization = []
+
+    sys_memory = process.memory_info()[0] / 2. ** 30
+
+    return gpu_memory, gpu_utilization, sys_memory
+
+def blit_text(surface, text, pos, font, color=pygame.Color('black')):
+    words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
+    space = font.size(' ')[0]  # The width of a space.
+    max_width, max_height = surface.get_size()
+    x, y = pos
+    for line in words:
+        for word in line:
+            word_surface = font.render(word, 0, color)
+            word_width, word_height = word_surface.get_size()
+            if x + word_width >= max_width:
+                x = pos[0]  # Reset the x.
+                y += word_height  # Start on new row.
+            surface.blit(word_surface, (x, y))
+            x += word_width + space
+        x = pos[0]  # Reset the x.
+        y += word_height  # Start on new row.
+
+##########################################################################################################
+#PPG fUNCTIONS
+##########################################################################################################
