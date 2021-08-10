@@ -9,7 +9,6 @@ from numpy import linalg as LA
 # DeepPPO: Class
 ###########################################################################
 
-
 class initialize_network_DeepPPO():
     def __init__(self, cfg, name, vehicle_name):
         self.g = tf.Graph()
@@ -210,4 +209,87 @@ class initialize_network_DeepPPO():
 ###########################################################################
 
 class initialize_network_DeepPPG():
+
     def __init__(self, cfg, name, vehicle_name):
+
+
+
+    def get_vars(self):
+        return self.sess.run(self.all_vars)
+
+
+    def initialize_graphs_with_average(self, agent, agent_on_same_network):        
+
+    
+
+
+
+
+
+
+
+
+    def prob_actions(self, xs):
+        TD_target = np.zeros(shape=[xs.shape[0], 1], dtype=np.float32)
+        prob_old = np.zeros(shape=[xs.shape[0], 1], dtype=np.float32)
+        GAE = np.zeros(shape=[xs.shape[0], 1], dtype=np.float32)
+        actions = np.zeros(dtype=int, shape=[xs.shape[0]])
+        return self.sess.run(self.pi,
+                             feed_dict={self.batch_size: xs.shape[0], self.learning_rate: 0, self.X1: xs,
+                                        self.actions: actions,
+                                        self.TD_target: TD_target,
+                                        self.prob_old: prob_old,
+                                        self.GAE: GAE})
+
+
+    def get_state_value(self, xs):
+        lr = 0
+        actions = np.zeros(dtype=int, shape=[xs.shape[0], 1])
+        TD_target = np.zeros(shape=[xs.shape[0], 1], dtype=np.float32)
+        prob_old = np.zeros(shape=[xs.shape[0], 1], dtype=np.float32)
+        GAE = np.zeros(shape=[xs.shape[0], 1], dtype=np.float32)
+
+        baseline = self.sess.run(self.state_value,
+                                 feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
+                                            self.X1: xs,
+                                            self.actions: actions,
+                                            self.TD_target: TD_target,
+                                            self.prob_old: prob_old,
+                                            self.GAE: GAE})
+        return baseline
+    
+
+    def train_policy(self, xs, actions, TD_target, prob_old, GAE, lr, iter):
+
+
+    def action_selection(self, state):
+        action = np.zeros(dtype=int, shape=[state.shape[0], 1])
+        prob_action = np.zeros(dtype=float, shape=[state.shape[0], 1])
+
+        probs = self.sess.run(self.pi,
+                              feed_dict={self.batch_size: state.shape[0], self.learning_rate: 0.0001,
+                                         self.X1: state,
+                                         self.actions: action})
+
+        for j in range(probs.shape[0]):
+            action[j] = np.random.choice(self.num_actions, 1, p=probs[j])[0]
+            prob_action[j] = probs[j][action[j][0]]
+
+        return action.astype(int)
+    
+
+    def log_to_tensorboard(self, tag, group, value, index):
+        summary = tf.Summary()
+        tag = group + '/' + tag
+        summary.value.add(tag=tag, simple_value=value)
+        self.stat_writer.add_summary(summary, index)
+
+    def save_network(self, save_path, episode=''):
+        save_path = save_path + self.vehicle_name + '/' + self.vehicle_name + '_' + str(episode)
+        self.saver.save(self.sess, save_path)
+        print('Model Saved: ', save_path)
+
+    def load_network(self, load_path):
+        self.saver.restore(self.sess, load_path)    
+
+    def train_aux():
