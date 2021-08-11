@@ -402,7 +402,7 @@ def DeepPPO(cfg, env_process, env_folder):
                         fig_z.canvas.flush_events()
 
                         current_state[name_agent] = agent[name_agent].get_state()
-                        action, action_type = policy_REINFORCE(current_state[name_agent], agent[name_agent])
+                        action,p_a ,action_type = policy_PPO(current_state[name_agent], agent[name_agent])
                         action_word = translate_action(action, algorithm_cfg.num_actions)
                         # Take continuous action
                         # agent[name_agent].take_action(action, algorithm_cfg.num_actions, Mode='static')

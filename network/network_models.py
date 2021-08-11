@@ -209,25 +209,93 @@ class initialize_network_DeepPPO():
 ###########################################################################
 
 class initialize_network_DeepPPG():
-
     def __init__(self, cfg, name, vehicle_name):
+        self.g = tf.Graph()
+        self.vehicle_name = vehicle_name
+        self.iter_baseline = 0
+        self.iter_policy = 0
+        self.first_frame = True
+        self.last_frame = []
+        self.iter_combined = 0
+        with self.g.as_default():
+            stat_writer_path = cfg.network_path + self.vehicle_name + '/return_plot/'
+            loss_writer_path = cfg.network_path + self.vehicle_name + '/loss' + name + '/'
+            self.stat_writer = tf.summary.FileWriter(stat_writer_path)
+            # name_array = 'D:/train/loss'+'/'+name
+            self.loss_writer = tf.summary.FileWriter(loss_writer_path)
+            self.env_type = cfg.env_type
+            self.input_size = cfg.input_size
+            self.num_actions = cfg.num_actions
+            self.eps_clip = cfg.eps_clip
+
+            # Placeholders
+            self.batch_size = tf.placeholder(tf.int32, shape=())
+            self.learning_rate = tf.placeholder(tf.float32, shape=())
+            self.X1 = tf.placeholder(tf.float32, [None, cfg.input_size, cfg.input_size, 3], name='States')
+
+            # self.X = tf.image.resize_images(self.X1, (227, 227))
+
+            self.X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), self.X1)
+            # self.target = tf.placeholder(tf.float32, shape=[None], name='action_probs')
+            # self.target_baseline = tf.placeholder(tf.float32, shape=[None], name='baseline')
+            self.actions = tf.placeholder(tf.int32, shape=[None, 1], name='Actions')
+            self.TD_target = tf.placeholder(tf.float32, shape=[None, 1], name='TD_target')
+            self.prob_old = tf.placeholder(tf.float32, shape=[None, 1], name='prob_old')
+            self.GAE = tf.placeholder(tf.float32, shape=[None, 1], name='GAE')
+
+            # Select the deep network
+            self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc)
+            self.pi = self.model.action_probs
+            self.state_value = self.model.state_value
+
+            self.ind = tf.one_hot(tf.squeeze(self.actions), cfg.num_actions)
+            self.pi_a = tf.expand_dims(tf.reduce_sum(tf.multiply(self.pi, self.ind), axis=1), axis=1)
+
+            self.ratio = tf.exp(tf.log(self.pi_a+1e-10) - tf.log(self.prob_old+1e-10))
+            p1 = self.ratio * self.GAE
+            p2 = tf.clip_by_value(self.ratio, 1-self.eps_clip, 1+self.eps_clip)*self.GAE
+
+            # Define losses
+            self.loss_actor_op = -tf.reduce_mean(tf.minimum(p1, p2))
+            self.loss_entropy = 0.5*tf.reduce_mean(tf.multiply((tf.log(self.pi) + 1e-8), self.pi))
+            self.loss_critic_op = 0.5*mse_loss(self.state_value, self.TD_target)
+
+            self.loss_op = self.loss_critic_op + self.loss_actor_op + self.loss_entropy
+
+            self.train_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
+                self.loss_op, name="train_main")
+
+            self.sess = tf.InteractiveSession()
+            tf.global_variables_initializer().run()
+            tf.local_variables_initializer().run()
+            self.saver = tf.train.Saver()
+            self.all_vars = tf.trainable_variables()
+
+            self.sess.graph.finalize()
 
 
 
     def get_vars(self):
         return self.sess.run(self.all_vars)
 
+    def initialize_graphs_with_average(self, agent, agent_on_same_network):
+        values = {}
+        var = {}
+        all_assign = {}
+        for name_agent in agent_on_same_network:
+            values[name_agent] = agent[name_agent].network_model.get_vars()
+            var[name_agent] = agent[name_agent].network_model.all_vars
+            all_assign[name_agent] = []
 
-    def initialize_graphs_with_average(self, agent, agent_on_same_network):        
-
-    
-
-
-
-
-
-
-
+        for i in range(len(values[name_agent])):
+            val = []
+            for name_agent in agent_on_same_network:
+                val.append(values[name_agent][i])
+            # Take mean here
+            mean_val = np.average(val, axis=0)
+            for name_agent in agent_on_same_network:
+                # all_assign[name_agent].append(tf.assign(var[name_agent][i], mean_val))
+                var[name_agent][i].load(mean_val, agent[name_agent].network_model.sess)      
 
     def prob_actions(self, xs):
         TD_target = np.zeros(shape=[xs.shape[0], 1], dtype=np.float32)
