@@ -491,3 +491,124 @@ def blit_text(surface, text, pos, font, color=pygame.Color('black')):
 ##########################################################################################################
 #PPG fUNCTIONS
 ##########################################################################################################
+
+#####################################################################
+def policy_PPG(curr_state, agent):
+    action, p_a = agent.network_model.action_selection_with_prob(curr_state)
+    action_type = 'Prob'
+    return action[0], p_a, action_type
+
+def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num):
+    batch_size = algorithm_cfg.batch_size
+    train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
+    lmbda = algorithm_cfg.lmbda
+    episode_len_total = len(data_tuple_total)
+    num_batches = int(np.ceil(episode_len_total / float(batch_size)))
+    for i in range(num_batches):
+        start_ind = i * batch_size
+        end_ind = np.min((len(data_tuple_total), (i + 1) * batch_size))
+        data_tuple = data_tuple_total[start_ind: end_ind]
+        episode_len = len(data_tuple)
+
+        curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+        next_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+        actions = np.zeros(shape=(episode_len, 1), dtype=int)
+        crashes = np.zeros(shape=(episode_len, 1))
+        rewards = np.zeros(shape=(episode_len, 1))
+        p_a = np.zeros(shape=(episode_len,1))
+
+        for ii, m in enumerate(data_tuple):
+            curr_state_m, action_m, next_state_m, reward_m, p_a_m, crash_m = m
+            curr_states[ii, :, :, :] = curr_state_m[...]
+            next_states[ii, :, :, :] = next_state_m[...]
+            actions[ii] = action_m
+            rewards[ii] = reward_m
+            p_a[ii] = p_a_m
+            crashes[ii] = ~crash_m
+
+        for i in range(train_epoch_per_batch):
+            V_s = agent.network_model.get_state_value(curr_states)
+            V_s_ = agent.network_model.get_state_value(next_states)
+            TD_target = rewards + gamma*V_s_* crashes
+            delta = TD_target - V_s
+
+            GAE_array = []
+            GAE=0
+            for delta_t in delta[::-1]:
+                GAE = gamma*lmbda* GAE + delta_t
+                GAE_array.append(GAE)
+
+            GAE_array.reverse()
+            GAE = np.array(GAE_array)
+            # Normalize the reward to reduce variance in training
+            GAE -= np.mean(GAE)
+            GAE /= (np.std(GAE) + 1e-8)
+            # TODO: zero mean unit std GAE
+            agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num)
+            
+            agent.network_model.train_aux()
+
+def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
+    _, Q_target, _, err, _ = minibatch_double(data_tuple, len(data_tuple), choose, ReplayMemory, input_size, agent,
+                                              target_agent, gamma, Q_clip)
+
+    return err
+
+def minibatch_double(data_tuple, batch_size, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
+    # Needs NOT to be in DeepAgent
+    # NO TD error term, and using huber loss instead
+    # Bellman Optimality equation update, with less computation, updated
+
+    if batch_size == 1:
+        train_batch = data_tuple
+        idx = None
+    else:
+        batch = ReplayMemory.sample(batch_size)
+        train_batch = np.array([b[1][0] for b in batch])
+        idx = [b[0] for b in batch]
+
+    actions = np.zeros(shape=(batch_size), dtype=int)
+    crashes = np.zeros(shape=(batch_size))
+    rewards = np.zeros(shape=batch_size)
+    curr_states = np.zeros(shape=(batch_size, input_size, input_size, 3))
+    new_states = np.zeros(shape=(batch_size, input_size, input_size, 3))
+    for ii, m in enumerate(train_batch):
+        curr_state_m, action_m, new_state_m, reward_m, crash_m = m
+        curr_states[ii, :, :, :] = curr_state_m[...]
+        actions[ii] = action_m
+        new_states[ii, :, :, :] = new_state_m
+        rewards[ii] = reward_m
+        crashes[ii] = crash_m
+
+    #
+    # oldQval = np.zeros(shape = [batch_size, num_actions])
+    if choose:
+        oldQval_A = target_agent.network_model.Q_val(curr_states)
+        newQval_A = target_agent.network_model.Q_val(new_states)
+        newQval_B = agent.network_model.Q_val(new_states)
+    else:
+        oldQval_A = agent.network_model.Q_val(curr_states)
+        newQval_A = agent.network_model.Q_val(new_states)
+        newQval_B = target_agent.network_model.Q_val(new_states)
+
+    TD = np.zeros(shape=[batch_size])
+    err = np.zeros(shape=[batch_size])
+    Q_target = np.zeros(shape=[batch_size])
+
+    term_ind = np.where(rewards == -1)[0]
+    nonterm_ind = np.where(rewards != -1)[0]
+
+    TD[nonterm_ind] = rewards[nonterm_ind] + gamma * newQval_B[nonterm_ind, np.argmax(newQval_A[nonterm_ind], axis=1)] - \
+                      oldQval_A[nonterm_ind, actions[nonterm_ind].astype(int)]
+    TD[term_ind] = rewards[term_ind]
+
+    if Q_clip:
+        TD_clip = np.clip(TD, -1, 1)
+    else:
+        TD_clip = TD
+
+    Q_target[nonterm_ind] = oldQval_A[nonterm_ind, actions[nonterm_ind].astype(int)] + TD_clip[nonterm_ind]
+    Q_target[term_ind] = TD_clip[term_ind]
+
+    err = abs(TD)  # or abs(TD_clip)
+    return curr_states, Q_target, actions, err, idx
