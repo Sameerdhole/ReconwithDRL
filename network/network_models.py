@@ -1,8 +1,9 @@
 import tensorflow as tf
 import numpy as np
 from network.loss_functions import huber_loss, mse_loss
-from network.network import C3F2, C3F2_REINFORCE_with_baseline, C3F2_ActorCriticShared
+from network.network import C3F2, C3F2_ActorCriticShared
 from numpy import linalg as LA
+from tf.keras.losses import KLDas kd
 
 
 ###########################################################################
@@ -227,6 +228,7 @@ class initialize_network_DeepPPG():
             self.input_size = cfg.input_size
             self.num_actions = cfg.num_actions
             self.eps_clip = cfg.eps_clip
+            self.beta=cfg.beta
 
             # Placeholders
             self.batch_size = tf.placeholder(tf.int32, shape=())
@@ -242,7 +244,7 @@ class initialize_network_DeepPPG():
             self.TD_target = tf.placeholder(tf.float32, shape=[None, 1], name='TD_target')
             self.prob_old = tf.placeholder(tf.float32, shape=[None, 1], name='prob_old')
             self.GAE = tf.placeholder(tf.float32, shape=[None, 1], name='GAE')
-
+            self.D_target = tf.placeholder(tf.float32, shape=[None, 1], name='D_target')
             # Select the deep network
             self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc)
             self.pi = self.model.action_probs
@@ -256,11 +258,16 @@ class initialize_network_DeepPPG():
             p2 = tf.clip_by_value(self.ratio, 1-self.eps_clip, 1+self.eps_clip)*self.GAE
 
             # Define losses
+            #Lclip loss
             self.loss_actor_op = -tf.reduce_mean(tf.minimum(p1, p2))
+            #S_pi entropy loss
             self.loss_entropy = 0.5*tf.reduce_mean(tf.multiply((tf.log(self.pi) + 1e-8), self.pi))
+            #L aux auxilary objective
             self.loss_critic_op = 0.5*mse_loss(self.state_value, self.TD_target)
-
-            self.loss_op = self.loss_critic_op + self.loss_actor_op + self.loss_entropy
+            #KL Loss
+            self.kl=kd(self.prob_old,self.pi)
+            #Ljoint
+            self.loss_op = self.loss_critic_op +tf.multiply(self.beta,self.kl)
 
             self.train_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
                 self.loss_op, name="train_main")
@@ -361,3 +368,9 @@ class initialize_network_DeepPPG():
         self.saver.restore(self.sess, load_path)    
 
     def train_aux():
+
+    def update_beta():
+        if(self.kl<self.D_target/1.5 ):
+            self.beta=selfbeta/2
+        elif(self.kl>self.D_target/1.5 ):
+            self.beta=selfbeta*2
