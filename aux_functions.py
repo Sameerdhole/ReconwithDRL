@@ -380,6 +380,12 @@ def train_PPO(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             # TODO: zero mean unit std GAE
             agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num)
 
+        for i in range (cfg.E_pi):
+
+        for i in range (cfg.E_v):
+
+        #Append to global buffer
+
 def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
     _, Q_target, _, err, _ = minibatch_double(data_tuple, len(data_tuple), choose, ReplayMemory, input_size, agent,
                                               target_agent, gamma, Q_clip)
@@ -546,7 +552,6 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             # TODO: zero mean unit std GAE
             agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num)
             
-            agent.network_model.train_aux()
 
 def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
     _, Q_target, _, err, _ = minibatch_double(data_tuple, len(data_tuple), choose, ReplayMemory, input_size, agent,
