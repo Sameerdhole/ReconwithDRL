@@ -87,9 +87,10 @@ def DeepPPG(cfg, env_process, env_folder):
 
     # iter = 1
     # num_collisions = 0
+    buffer = {}
     episode = {}
     active = True
-
+    phases = 1
     print_interval = 1
     automate = True
     choose = False
@@ -139,7 +140,10 @@ def DeepPPG(cfg, env_process, env_folder):
             active, automate, algorithm_cfg, client = check_user_input(active, automate, agent[name_agent], client,
                                                                        old_posit[name_agent], initZ, fig_z, fig_nav,
                                                                        env_folder, cfg, algorithm_cfg)
+
 #for loop for phases
+    if phases :
+
             if automate:
 
                 if cfg.mode == 'train':
@@ -267,7 +271,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                                            index=epi_num[name_agent])
 
                                         # Train episode
-                                        train_PPO(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                        train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
                                                         algorithm_cfg.learning_rate, algorithm_cfg.input_size,
                                                         algorithm_cfg.gamma, epi_num[name_agent], )
                                         #compute and store current policy for all states in  buffer B
@@ -358,6 +362,10 @@ def DeepPPG(cfg, env_process, env_folder):
 
                     # iter += 1
 
+                    
+
+
+
                 elif cfg.mode == 'infer':
                     # Inference phase
                     agent_state = agent[name_agent].GetAgentState()
@@ -423,7 +431,11 @@ def DeepPPG(cfg, env_process, env_folder):
             else:
                 for i in range(cfg.E_aux):
                 #train_aux
-        #automate=true
+            automate = True
+
+            if phases % cfg.phases == 0 :
+                        phases += 1
+
 
 
         except Exception as e:

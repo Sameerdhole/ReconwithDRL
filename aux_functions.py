@@ -551,7 +551,11 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             GAE /= (np.std(GAE) + 1e-8)
             # TODO: zero mean unit std GAE
             agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num)
-            
+
+    #train_aux(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer, beta):
+
+    #agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num)
+
 
 def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
     _, Q_target, _, err, _ = minibatch_double(data_tuple, len(data_tuple), choose, ReplayMemory, input_size, agent,
