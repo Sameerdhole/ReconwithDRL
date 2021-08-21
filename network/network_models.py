@@ -234,6 +234,7 @@ class initialize_network_DeepPPG():
             self.num_actions = cfg.num_actions
             self.eps_clip = cfg.eps_clip
             self.beta=cfg.beta
+            self.beta=cfg.beta_s
 
             # Placeholders
             self.batch_size = tf.placeholder(tf.int32, shape=())
@@ -265,17 +266,40 @@ class initialize_network_DeepPPG():
             # Define losses
             #Lclip loss
             self.loss_actor_op = -tf.reduce_mean(tf.minimum(p1, p2))
+
             #S_pi entropy loss
             self.loss_entropy = 0.5*tf.reduce_mean(tf.multiply((tf.log(self.pi) + 1e-8), self.pi))
+
+            #E_Pi loss
+            self.L1=self.loss_actor_op+tf.multiply(self.beta_s,self.loss_entropy )
+            
             #L aux auxilary objective
             self.loss_critic_op = 0.5*mse_loss(self.state_value, self.TD_target)
-            #KL Loss
+            
+            #KL Loss(yet to be written correctly)
             self.kl=kd(self.prob_old,self.pi)
+            
             #Ljoint
             self.loss_op = self.loss_critic_op +tf.multiply(self.beta,self.kl)
-
+            
+            #OPTIMIZERS
+            
+            #PPO OP 
             self.train_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
                 self.loss_op, name="train_main")
+            
+            #Policy(E_pi) OP
+            self.E_pi_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
+                self.L1, name="train_main")
+            
+            #Value(E_v) OP
+            self.E_v_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
+                self.loss_critic_op, name="train_main")
+            
+            #L_joint OP
+            self.E_v_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
+                self.loss_op, name="train_main")
+
 
             self.sess = tf.InteractiveSession()
             tf.global_variables_initializer().run()
@@ -339,7 +363,7 @@ class initialize_network_DeepPPG():
         return baseline
     
 
-    def train_policy(self, xs, actions, TD_target, prob_old, GAE, lr, iter):
+    def train_policy(self, xs, actions, TD_target, prob_old, GAE, lr, iter,E_pi,E_v):
         elf.iter_policy += 1
         batch_size = xs.shape[0]
         train_eval = self.train_op
@@ -355,6 +379,11 @@ class initialize_network_DeepPPG():
                                                         self.GAE: GAE})
 
         MaxProbActions = np.max(ProbActions)
+        for m in range(E_pi):
+            #optimize L1
+        for n in range(E_v):
+            #optimize l_aux
+
         # Log to tensorboard
         self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(loss) / batch_size,
                                 index=self.iter_policy)
@@ -366,7 +395,6 @@ class initialize_network_DeepPPG():
                                 index=self.iter_policy)
         self.log_to_tensorboard(tag='Learning Rate', group=self.vehicle_name, value=lr, index=self.iter_policy)
         self.log_to_tensorboard(tag='MaxProb', group=self.vehicle_name, value=MaxProbActions, index=self.iter_policy)
-
 
 
     def action_selection(self, state):
@@ -399,7 +427,10 @@ class initialize_network_DeepPPG():
     def load_network(self, load_path):
         self.saver.restore(self.sess, load_path)    
 
-    def train_aux():
+    def train_aux(self,xs, actions, TD_target, prob_old, GAE, lr, iter):
+        ##init params
+        ##feeddict to optimize l joint
+        ##Optimize L joint wrt theta_pi and theta_v
 
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):

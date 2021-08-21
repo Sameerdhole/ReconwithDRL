@@ -505,7 +505,9 @@ def policy_PPG(curr_state, agent):
     return action[0], p_a, action_type
 
 def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num):
-    batch_size = algorithm_cfg.batch_size
+    E_pi=algorithm_cfg.E_pi
+    E_v=algorithm_cfg.E_v
+    batch_size = algorithm_cfg.policy_batch_size
     train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
     lmbda = algorithm_cfg.lmbda
     episode_len_total = len(data_tuple_total)
@@ -550,11 +552,40 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             GAE -= np.mean(GAE)
             GAE /= (np.std(GAE) + 1e-8)
             # TODO: zero mean unit std GAE
-            agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num)
+            agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,,E_pi,E_v)
+            ##add buffer and return and append  to main buffer
+            
+def train_AUX(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer, beta):
+    batch_size = algorithm_cfg.aux_batch_size
+    train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
+    lmbda = algorithm_cfg.lmbda
+    episode_len_total = len(data_tuple_total)
+    num_batches = int(np.ceil(episode_len_total / float(batch_size)))
+    for i in range(num_batches):
+        start_ind = i * batch_size
+        end_ind = np.min((len(data_tuple_total), (i + 1) * batch_size))
+        data_tuple = data_tuple_total[start_ind: end_ind]
+        episode_len = len(data_tuple)
 
-    #train_aux(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer, beta):
+        curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+        next_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+        actions = np.zeros(shape=(episode_len, 1), dtype=int)
+        crashes = np.zeros(shape=(episode_len, 1))
+        rewards = np.zeros(shape=(episode_len, 1))
+        p_a = np.zeros(shape=(episode_len,1))
 
-    #agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num)
+        for ii, m in enumerate(data_tuple):
+            curr_state_m, action_m, next_state_m, reward_m, p_a_m, crash_m = m
+            curr_states[ii, :, :, :] = curr_state_m[...]
+            next_states[ii, :, :, :] = next_state_m[...]
+            actions[ii] = action_m
+            rewards[ii] = reward_m
+            p_a[ii] = p_a_m
+            crashes[ii] = ~crash_m
+
+        for i in range(train_epoch_per_batch):
+
+        agent.network_model.train_aux(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)
 
 
 def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
