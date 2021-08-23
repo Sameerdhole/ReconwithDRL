@@ -87,7 +87,7 @@ def DeepPPG(cfg, env_process, env_folder):
 
     # iter = 1
     # num_collisions = 0
-    buffer = {}
+    
     episode = {}
     active = True
     phases = 1
@@ -108,6 +108,7 @@ def DeepPPG(cfg, env_process, env_folder):
     distance_array = {}
     epi_env_array = {}
     log_files = {}
+    probs=[]
 
     # If the phase is inference force the num_agents to 1
     hyphens = '-' * int((80 - len('Log files')) / 2)
@@ -141,6 +142,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                        old_posit[name_agent], initZ, fig_z, fig_nav,
                                                                        env_folder, cfg, algorithm_cfg)
             if phases:
+                global_buffer = {}
 
                 if automate:
 
@@ -190,7 +192,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                     else:
                                         agent_this_drone = agent[name_agent]
 
-                                    action, p_a, action_type = policy_PPG(current_state[name_agent], agent_this_drone)
+                                    probs,action, p_a, action_type = policy_PPG(current_state[name_agent], agent_this_drone)
                                     # print('Evaluated Policy')
                                     action_word = translate_action(action, algorithm_cfg.num_actions)
                                     # Take the action
@@ -269,9 +271,9 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                                                index=epi_num[name_agent])
 
                                             # Train episode
-                                            train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                            buffer=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
                                                             algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                                            algorithm_cfg.gamma, epi_num[name_agent] )
+                                                            algorithm_cfg.gamma, epi_num[name_agent],name_agent )
                                             #compute and store current policy for all states in  buffer B
 
                                             c = agent_this_drone.network_model.get_vars()[15][0]
@@ -348,7 +350,8 @@ def DeepPPG(cfg, env_process, env_folder):
                                         cv2.imshow(name_agent, np.hstack((np.squeeze(current_state[name_agent], axis=0),
                                                                           np.squeeze(new_state[name_agent], axis=0))))
                                         cv2.waitKey(1)
-
+                                    ##Append to buffer##
+                                    global_buffer = dict(global_buffer, **buffer)
                                     if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
                                         print(automate)
                                         automate = False
@@ -422,6 +425,9 @@ def DeepPPG(cfg, env_process, env_folder):
                             print(s_log)
                             log_files[name_agent].write(s_log + '\n')
          #########Compute and store current policy############
+                for _ in global_buffer():
+                    global_buffer(name_agent).append(probs)
+
                 else:
                     for i in range(cfg.E_aux):
                         train_AUX(data_tuple[name_agent], algorithm_cfg, agent_this_drone,

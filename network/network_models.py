@@ -177,7 +177,7 @@ class initialize_network_DeepPPO():
             action[j] = np.random.choice(self.num_actions, 1, p=probs[j])[0]
             prob_action[j] = probs[j][action[j][0]]
 
-        return action.astype(int), prob_action
+        return action.astype(int), prob_action,probs
 
     def action_selection(self, state):
         action = np.zeros(dtype=int, shape=[state.shape[0], 1])

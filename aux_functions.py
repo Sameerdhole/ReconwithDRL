@@ -504,7 +504,8 @@ def policy_PPG(curr_state, agent):
     action_type = 'Prob'
     return action[0], p_a, action_type
 
-def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num):
+def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num,name_agent):
+    buffer={}
     E_pi=algorithm_cfg.E_pi
     E_v=algorithm_cfg.E_v
     batch_size = algorithm_cfg.policy_batch_size
@@ -529,6 +530,8 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             curr_state_m, action_m, next_state_m, reward_m, p_a_m, crash_m = m
             curr_states[ii, :, :, :] = curr_state_m[...]
             next_states[ii, :, :, :] = next_state_m[...]
+            buffer[name_agent].append(curr_state)
+
             actions[ii] = action_m
             rewards[ii] = reward_m
             p_a[ii] = p_a_m
@@ -540,6 +543,8 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             TD_target = rewards + gamma*V_s_* crashes
             delta = TD_target - V_s
 
+            buffer[name_agent].append(TD_target)
+            
             GAE_array = []
             GAE=0
             for delta_t in delta[::-1]:
@@ -554,6 +559,7 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             # TODO: zero mean unit std GAE
             agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,,E_pi,E_v)
             ##add buffer and return and append  to main buffer
+        return buffer
             
 def train_AUX(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer, beta):
     batch_size = algorithm_cfg.aux_batch_size
