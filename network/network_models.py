@@ -253,6 +253,8 @@ class initialize_network_DeepPPG():
             self.D_target = tf.placeholder(tf.float32, shape=[None, 1], name='D_target')
             # Select the deep network
             self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc)
+            ##can decouple actor and critic here based on models.
+            ##get_state values feeds params to model.state_value which in turn calls c3f2 model and returns state value 
             self.pi = self.model.action_probs
             self.state_value = self.model.state_value
 
@@ -428,9 +430,28 @@ class initialize_network_DeepPPG():
         self.saver.restore(self.sess, load_path)    
 
     def train_aux(self,xs, actions, TD_target, prob_old, GAE, lr, iter):
+        
+
+
         ##init params
         ##feeddict to optimize l joint
         ##Optimize L joint wrt theta_pi and theta_v
+
+        elf.iter_policy += 1
+        batch_size = xs.shape[0]
+        train_eval = self.train_op
+        loss_eval = self.loss_op
+        predict_eval = self.pi
+
+        _, loss, loss_critic, loss_actor,loss_entropy, ProbActions = self.sess.run([train_eval, loss_eval, self.loss_critic_op, self.loss_actor_op, self.loss_entropy, predict_eval],
+                                             feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
+                                                        self.X1: xs,
+                                                        self.actions: actions,
+                                                        self.TD_target: TD_target,
+                                                        self.prob_old: prob_old,
+                                                        self.GAE: GAE})
+
+
 
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):

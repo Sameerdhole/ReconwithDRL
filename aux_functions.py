@@ -562,6 +562,7 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
         return buffer
             
 def train_AUX(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer, beta):
+    ###minibatches 
     batch_size = algorithm_cfg.aux_batch_size
     train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
     lmbda = algorithm_cfg.lmbda
