@@ -252,11 +252,14 @@ class initialize_network_DeepPPG():
             self.GAE = tf.placeholder(tf.float32, shape=[None, 1], name='GAE')
             self.D_target = tf.placeholder(tf.float32, shape=[None, 1], name='D_target')
             # Select the deep network
-            self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc)
+
+            self.model_pi = C3F2_Actor(self.x,cfg.num_actions,cfg.train_fc)
+            self.model_v = C3F2_Critic(self.x,cfg.num_actions,cfg.train_fc)
+            #self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc)
             ##can decouple actor and critic here based on models.
             ##get_state values feeds params to model.state_value which in turn calls c3f2 model and returns state value 
-            self.pi = self.model.action_probs
-            self.state_value = self.model.state_value
+            self.pi = self.model_pi.action_probs
+            self.state_value = self.model_v.state_value
 
             self.ind = tf.one_hot(tf.squeeze(self.actions), cfg.num_actions)
             self.pi_a = tf.expand_dims(tf.reduce_sum(tf.multiply(self.pi, self.ind), axis=1), axis=1)
@@ -273,16 +276,19 @@ class initialize_network_DeepPPG():
             self.loss_entropy = 0.5*tf.reduce_mean(tf.multiply((tf.log(self.pi) + 1e-8), self.pi))
 
             #E_Pi loss
-            self.L1=self.loss_actor_op+tf.multiply(self.beta_s,self.loss_entropy )
+            self.L_pi=self.loss_actor_op+tf.multiply(self.beta_s,self.loss_entropy )
             
-            #L aux auxilary objective
-            self.loss_critic_op = 0.5*mse_loss(self.state_value, self.TD_target)
+            #L aux auxilary objective/L_value
+            self.L_aux = 0.5*mse_loss(self.state_value, self.TD_target)
+
+            #Value Loss
+            self.L_v = 0.5*mse_loss(self.state_value, self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            self.kl=kd(self.prob_old,self.pi)
+            self.kl=kd(tf.log(self.prob_old),tf.log(self.pi))
             
             #Ljoint
-            self.loss_op = self.loss_critic_op +tf.multiply(self.beta,self.kl)
+            self.loss_op = self.L_aux +tf.multiply(self.beta,self.kl)
             
             #OPTIMIZERS
             
@@ -292,11 +298,15 @@ class initialize_network_DeepPPG():
             
             #Policy(E_pi) OP
             self.E_pi_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
-                self.L1, name="train_main")
+                self.L_pi, name="train_main")
             
             #Value(E_v) OP
             self.E_v_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
-                self.loss_critic_op, name="train_main")
+                self.L_v, name="train_main")
+
+            #Value(E_aux) OP
+            self.E_aux_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
+                self.L_aux, name="train_main")
             
             #L_joint OP
             self.E_v_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
@@ -369,10 +379,15 @@ class initialize_network_DeepPPG():
         elf.iter_policy += 1
         batch_size = xs.shape[0]
         train_eval = self.train_op
+        L_pi_eval=self.E_pi_op
         loss_eval = self.loss_op
         predict_eval = self.pi
+        L_v_eval=self.E_v_op
 
-        _, loss, loss_critic, loss_actor,loss_entropy, ProbActions = self.sess.run([train_eval, loss_eval, self.loss_critic_op, self.loss_actor_op, self.loss_entropy, predict_eval],
+
+        #optimize L_pi
+        for m in range(E_pi):
+            _,L_pi,l_clip,L_entrop, ProbActions = self.sess.run([L_pi_eval,self.L_pi,self.loss_actor_op,self.loss_entropy , predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
@@ -380,11 +395,16 @@ class initialize_network_DeepPPG():
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
 
-        MaxProbActions = np.max(ProbActions)
-        for m in range(E_pi):
-            #optimize L1
+        #optimize L_v
         for n in range(E_v):
-            #optimize l_aux
+            _,L_v = self.sess.run([L_v_eval,self.L_v],
+                                             feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
+                                                        self.X1: xs,
+                                                        self.actions: actions,
+                                                        self.TD_target: TD_target,
+                                                        self.prob_old: prob_old,
+                                                        self.GAE: GAE})
+            
 
         # Log to tensorboard
         self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(loss) / batch_size,
@@ -430,9 +450,6 @@ class initialize_network_DeepPPG():
         self.saver.restore(self.sess, load_path)    
 
     def train_aux(self,xs, actions, TD_target, prob_old, GAE, lr, iter):
-        
-
-
         ##init params
         ##feeddict to optimize l joint
         ##Optimize L joint wrt theta_pi and theta_v
@@ -443,7 +460,7 @@ class initialize_network_DeepPPG():
         loss_eval = self.loss_op
         predict_eval = self.pi
 
-        _, loss, loss_critic, loss_actor,loss_entropy, ProbActions = self.sess.run([train_eval, loss_eval, self.loss_critic_op, self.loss_actor_op, self.loss_entropy, predict_eval],
+        _, loss, loss_critic, loss_actor,loss_entropy, ProbActions = self.sess.run([train_eval, loss_eval, self.L_aux, self.loss_actor_op, self.loss_entropy, predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,

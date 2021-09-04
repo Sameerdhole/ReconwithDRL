@@ -561,9 +561,10 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             ##add buffer and return and append  to main buffer
         return buffer
             
-def train_AUX(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer, beta):
+def train_AUX(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer, beta,):
     ###minibatches 
     batch_size = algorithm_cfg.aux_batch_size
+    aux_iter = algorithm_cfg.E_v
     train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
     lmbda = algorithm_cfg.lmbda
     episode_len_total = len(data_tuple_total)
@@ -590,7 +591,7 @@ def train_AUX(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             p_a[ii] = p_a_m
             crashes[ii] = ~crash_m
 
-        for i in range(train_epoch_per_batch):
+        for i in range(aux_iter):
 
         agent.network_model.train_aux(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)
 
