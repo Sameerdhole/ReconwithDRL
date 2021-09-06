@@ -382,6 +382,7 @@ class initialize_network_DeepPPG():
         L_pi_eval=self.E_pi_op
         loss_eval = self.loss_op
         predict_eval = self.pi
+        predict_state = self.state_value
         L_v_eval=self.E_v_op
 
 
@@ -397,7 +398,7 @@ class initialize_network_DeepPPG():
 
         #optimize L_v
         for n in range(E_v):
-            _,L_v = self.sess.run([L_v_eval,self.L_v],
+            _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
