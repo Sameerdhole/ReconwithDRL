@@ -429,10 +429,10 @@ def DeepPPG(cfg, env_process, env_folder):
                     global_buffer(name_agent).append(probs)
 
                 else:
-                    for i in range(cfg.E_aux):
-                        train_AUX(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+
+                    train_AUX(algorithm_cfg, agent_this_drone,
                                 algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                algorithm_cfg.gamma, epi_num[name_agent],buffer)
+                                algorithm_cfg.gamma, epi_num[name_agent],global_buffer)
                     automate = True
 
                 if phases % cfg.phases == 0 :

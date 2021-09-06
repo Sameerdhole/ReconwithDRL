@@ -561,18 +561,18 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             ##add buffer and return and append  to main buffer
         return buffer
             
-def train_AUX(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer, beta,):
+def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer):
     ###minibatches 
     batch_size = algorithm_cfg.aux_batch_size
     aux_iter = algorithm_cfg.E_v
     train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
     lmbda = algorithm_cfg.lmbda
-    episode_len_total = len(data_tuple_total)
+    episode_len_total = len(buffer)
     num_batches = int(np.ceil(episode_len_total / float(batch_size)))
     for i in range(num_batches):
         start_ind = i * batch_size
-        end_ind = np.min((len(data_tuple_total), (i + 1) * batch_size))
-        data_tuple = data_tuple_total[start_ind: end_ind]
+        end_ind = np.min((len(buffer), (i + 1) * batch_size))
+        data_tuple = buffer[start_ind: end_ind]
         episode_len = len(data_tuple)
 
         curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
@@ -593,7 +593,7 @@ def train_AUX(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
 
         for i in range(aux_iter):
 
-        agent.network_model.train_aux(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)
+            agent.network_model.train_aux(curr_states, actions, TD_target, p_a, GAE, lr)
 
 
 def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):

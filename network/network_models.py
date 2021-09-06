@@ -309,7 +309,7 @@ class initialize_network_DeepPPG():
                 self.L_aux, name="train_main")
             
             #L_joint OP
-            self.E_v_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
+            self.E_joint_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
                 self.loss_op, name="train_main")
 
 
@@ -450,18 +450,31 @@ class initialize_network_DeepPPG():
     def load_network(self, load_path):
         self.saver.restore(self.sess, load_path)    
 
-    def train_aux(self,xs, actions, TD_target, prob_old, GAE, lr, iter):
+    def train_aux(self,xs, actions, TD_target, prob_old, GAE, lr):
         ##init params
         ##feeddict to optimize l joint
         ##Optimize L joint wrt theta_pi and theta_v
 
         elf.iter_policy += 1
         batch_size = xs.shape[0]
+        joint_eval = self.E_joint_op
         train_eval = self.train_op
         loss_eval = self.loss_op
         predict_eval = self.pi
+        predict_state = self.state_value
 
-        _, loss, loss_critic, loss_actor,loss_entropy, ProbActions = self.sess.run([train_eval, loss_eval, self.L_aux, self.loss_actor_op, self.loss_entropy, predict_eval],
+        #optimize L
+
+        _,L_a,L_o,L_kl, ProbActions = self.sess.run([joint_eval,self.L_aux,self.loss_op,self.kl , predict_eval],
+                                             feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
+                                                        self.X1: xs,
+                                                        self.actions: actions,
+                                                        self.TD_target: TD_target,
+                                                        self.prob_old: prob_old,
+                                                        self.GAE: GAE})
+
+        #optimize L_v
+        _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
