@@ -271,7 +271,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                                                index=epi_num[name_agent])
 
                                             # Train episode
-                                            buffer=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                            buffer[name_agent]=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
                                                             algorithm_cfg.learning_rate, algorithm_cfg.input_size,
                                                             algorithm_cfg.gamma, epi_num[name_agent],name_agent )
                                             #compute and store current policy for all states in  buffer B
@@ -425,8 +425,8 @@ def DeepPPG(cfg, env_process, env_folder):
                             print(s_log)
                             log_files[name_agent].write(s_log + '\n')
          #########Compute and store current policy############
-                for _ in global_buffer():
-                    global_buffer(name_agent).append(probs)
+         #        for _ in global_buffer():
+         #           global_buffer(name_agent).append(probs)
 
                 else:
 
