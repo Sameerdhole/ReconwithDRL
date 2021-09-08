@@ -538,30 +538,26 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             crashes[ii] = ~crash_m
 
  #       for i in range(train_epoch_per_batch):
-            V_s = agent.network_model.get_state_value(curr_states)
-            V_s_ = agent.network_model.get_state_value(next_states)
-            TD_target = rewards + gamma*V_s_* crashes
-            delta = TD_target - V_s
-            buffer[name_agent].append(curr_state)
-            buffer[name_agent].append(TD_target)
-            
-            GAE_array = []
-            GAE=0
-            for delta_t in delta[::-1]:
-                GAE = gamma*lmbda* GAE + delta_t
-                GAE_array.append(GAE)
-
-            GAE_array.reverse()
-            GAE = np.array(GAE_array)
-            # Normalize the reward to reduce variance in training
-            GAE -= np.mean(GAE)
-            GAE /= (np.std(GAE) + 1e-8)
-            # TODO: zero mean unit std GAE
-            agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)
-            p_a=prob_actions(curr_state)
-            buffer[name_agent].append(p_a)
-            ##add buffer and return and append  to main buffer
-        return buffer
+        V_s = agent.network_model.get_state_value(curr_states)
+        V_s_ = agent.network_model.get_state_value(next_states)
+        TD_target = rewards + gamma*V_s_* crashes
+        delta = TD_target - V_s     
+        GAE_array = []
+        GAE=0
+        for delta_t in delta[::-1]:
+            GAE = gamma*lmbda* GAE + delta_t
+            GAE_array.append(GAE)
+        GAE_array.reverse()
+        GAE = np.array(GAE_array)
+        # Normalize the reward to reduce variance in training
+        GAE -= np.mean(GAE)
+        GAE /= (np.std(GAE) + 1e-8)
+        # TODO: zero mean unit std GAE
+        p_a=prob_actions(curr_states)
+        buffer.append([curr_states,TD_target,p_a])
+        agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)        
+        ##add buffer and return and append  to main buffer
+    return buffer
             
 def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buffer):
     ###minibatches 
