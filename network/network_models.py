@@ -3,7 +3,7 @@ import numpy as np
 from network.loss_functions import huber_loss, mse_loss
 from network.network import C3F2, C3F2_ActorCriticShared
 from numpy import linalg as LA
-from tf.keras.losses import KLDas kd
+from tf.keras.losses import KLD as kd
 
 
 ###########################################################################
