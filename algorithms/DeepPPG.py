@@ -145,6 +145,7 @@ def DeepPPG(cfg, env_process, env_folder):
                 global_buffer = []
 
                 if automate:
+                    buff = []
 
                     if cfg.mode == 'train':
 
@@ -271,7 +272,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                                                index=epi_num[name_agent])
 
                                             # Train episode
-                                            buffer=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                            buff=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
                                                             algorithm_cfg.learning_rate, algorithm_cfg.input_size,
                                                             algorithm_cfg.gamma, epi_num[name_agent],name_agent )
                                             #compute and store current policy for all states in  buffer B
@@ -351,8 +352,8 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                           np.squeeze(new_state[name_agent], axis=0))))
                                         cv2.waitKey(1)
                                     ##Append to buffer##
-                                    for i in range(len(buffer)):
-                                        global_buffer.append(buffer[i])
+                                    for i in range(len(buff)):
+                                        global_buffer.append(buff[i])
                                     if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
                                         print(automate)
                                         automate = False
