@@ -1,10 +1,9 @@
 *.xlsx
 *.npy
 *.pyc
-*.xml
+.xml
 .idea/
 models/
-pretrained_weights/*
+pretrained_weights/
 unreal_envs/*
 scratch.py
-
