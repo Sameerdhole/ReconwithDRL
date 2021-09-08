@@ -11,7 +11,7 @@ from configs.read_cfg import read_cfg, update_algorithm_cfg
 
 
 def DeepPPG(cfg, env_process, env_folder):
-    algorithm_cfg = read_cfg(config_filename='configs/DeepPPO.cfg', verbose=True)
+    algorithm_cfg = read_cfg(config_filename='configs/DeepPPG.cfg', verbose=True)
     algorithm_cfg.algorithm = cfg.algorithm
 
     if 'GlobalLearningGlobalUpdate-SA' in algorithm_cfg.distributed_algo:
@@ -142,7 +142,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                        old_posit[name_agent], initZ, fig_z, fig_nav,
                                                                        env_folder, cfg, algorithm_cfg)
             if phases:
-                global_buffer = {}
+                global_buffer = []
 
                 if automate:
 
