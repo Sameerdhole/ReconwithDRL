@@ -8,6 +8,7 @@ from aux_functions import *
 import os
 from util.transformations import euler_from_quaternion
 from configs.read_cfg import read_cfg, update_algorithm_cfg
+import numpy as np
 
 
 def DeepPPG(cfg, env_process, env_folder):
@@ -41,6 +42,7 @@ def DeepPPG(cfg, env_process, env_folder):
     posit = {}
     name_agent_list = []
     data_tuple = {}
+
     agent = {}
     epi_num = {}
     if cfg.mode == 'train':
@@ -90,7 +92,8 @@ def DeepPPG(cfg, env_process, env_folder):
     
     episode = {}
     active = True
-    phases = 1
+    phases = True
+    phase_count = 0
     print_interval = 1
     automate = True
     choose = False
@@ -108,7 +111,7 @@ def DeepPPG(cfg, env_process, env_folder):
     distance_array = {}
     epi_env_array = {}
     log_files = {}
-    probs=[]
+
 
     # If the phase is inference force the num_agents to 1
     hyphens = '-' * int((80 - len('Log files')) / 2)
@@ -142,10 +145,11 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                        old_posit[name_agent], initZ, fig_z, fig_nav,
                                                                        env_folder, cfg, algorithm_cfg)
             if phases:
-                global_buffer = []
-
+                global_buffer = {}
+                global_buffer[name_agent] = []
                 if automate:
-                    buff = []
+                    buff = {}
+                    buff[name_agent] = []
 
                     if cfg.mode == 'train':
 
@@ -192,8 +196,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                         agent_this_drone = global_agent
                                     else:
                                         agent_this_drone = agent[name_agent]
-
-                                    probs,action, p_a, action_type = policy_PPG(current_state[name_agent], agent_this_drone)
+                                    action, p_a, action_type = policy_PPG(current_state[name_agent], agent_this_drone)
                                     # print('Evaluated Policy')
                                     action_word = translate_action(action, algorithm_cfg.num_actions)
                                     # Take the action
@@ -272,9 +275,10 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                                                index=epi_num[name_agent])
 
                                             # Train episode
-                                            buff=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                            buff[name_agent]=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
                                                             algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                                            algorithm_cfg.gamma, epi_num[name_agent],name_agent )
+                                                            algorithm_cfg.gamma, epi_num[name_agent],name_agent)
+                                            print(np.shape(buff))
                                             #compute and store current policy for all states in  buffer B
 
                                             c = agent_this_drone.network_model.get_vars()[15][0]
@@ -352,8 +356,9 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                           np.squeeze(new_state[name_agent], axis=0))))
                                         cv2.waitKey(1)
                                     ##Append to buffer##
-                                    for i in range(len(buff)):
-                                        global_buffer.append(buff[i])
+                                    
+                                    global_buffer[name_agent].append(buff[name_agent])
+                                    print(np.shape(global_buffer))
                                     if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
                                         print(automate)
                                         automate = False
@@ -434,14 +439,14 @@ def DeepPPG(cfg, env_process, env_folder):
 
                     train_AUX(algorithm_cfg, agent_this_drone,
                                 algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                algorithm_cfg.gamma, epi_num[name_agent],global_buffer)
+                                algorithm_cfg.gamma, epi_num[name_agent],global_buffer[name_agent], name_agent)
                     automate = True
 
-                if phases % cfg.phases == 0 :
-                    phases=0
+                if phase_count % algorithm_cfg.phases == 0 :
+                    phases = False
                     active=False
                 else:
-                    phases+=1
+                    phase_count+=1
 
 
         except Exception as e:
