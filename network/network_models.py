@@ -1,10 +1,9 @@
 import tensorflow as tf
 import numpy as np
 from network.loss_functions import huber_loss, mse_loss
-from network.network import C3F2, C3F2_ActorCriticShared
+from network.network import C3F2, C3F2_ActorCriticShared, C3F2_Actor, C3F2_Critic
 from numpy import linalg as LA
-from tf.keras.losses import KLD as kd
-
+from tensorflow.python.keras._impl.keras.losses import kullback_leibler_divergence as kd
 
 ###########################################################################
 # DeepPPO: Class
@@ -234,7 +233,7 @@ class initialize_network_DeepPPG():
             self.num_actions = cfg.num_actions
             self.eps_clip = cfg.eps_clip
             self.beta=cfg.beta
-            self.beta=cfg.beta_s
+            self.beta_s=cfg.beta_s
 
             # Placeholders
             self.batch_size = tf.placeholder(tf.int32, shape=())
@@ -253,8 +252,8 @@ class initialize_network_DeepPPG():
             self.D_target = tf.placeholder(tf.float32, shape=[None, 1], name='D_target')
             # Select the deep network
 
-            self.model_pi = C3F2_Actor(self.x,cfg.num_actions,cfg.train_fc)
-            self.model_v = C3F2_Critic(self.x,cfg.num_actions,cfg.train_fc)
+            self.model_pi = C3F2_Actor(self.X,cfg.num_actions,cfg.train_fc)
+            self.model_v = C3F2_Critic(self.X,cfg.num_actions,cfg.train_fc)
             #self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc)
             ##can decouple actor and critic here based on models.
             ##get_state values feeds params to model.state_value which in turn calls c3f2 model and returns state value 
@@ -288,7 +287,7 @@ class initialize_network_DeepPPG():
             self.kl=kd(tf.log(self.prob_old),tf.log(self.pi))
             
             #Ljoint
-            self.loss_op = self.L_aux +tf.multiply(self.beta,self.kl)
+            self.loss_op = self.L_aux +tf.multiply(float(self.beta),self.kl)
             
             #OPTIMIZERS
             
@@ -375,8 +374,45 @@ class initialize_network_DeepPPG():
         return baseline
     
 
+
+
+    def action_selection_with_prob(self, state):
+        action = np.zeros(dtype=int, shape=[state.shape[0], 1])
+        prob_action = np.zeros(dtype=float, shape=[state.shape[0], 1])
+
+        probs = self.sess.run(self.pi,
+                              feed_dict={self.batch_size: state.shape[0], self.learning_rate: 0.0001,
+                                         self.X1: state,
+                                         self.actions: action})
+
+        print(np.shape(probs))
+        print(probs)
+        for j in range(probs.shape[0]):
+            action[j] = np.random.choice(self.num_actions, 1, p=probs[j])[0]
+            prob_action[j] = probs[j][action[j][0]]
+
+        return action.astype(int), prob_action,probs
+
+
+    def action_selection(self, state):
+        action = np.zeros(dtype=int, shape=[state.shape[0], 1])
+        prob_action = np.zeros(dtype=float, shape=[state.shape[0], 1])
+
+        probs = self.sess.run(self.pi,
+                              feed_dict={self.batch_size: state.shape[0], self.learning_rate: 0.0001,
+                                         self.X1: state,
+                                         self.actions: action})
+
+        for j in range(probs.shape[0]):
+            action[j] = np.random.choice(self.num_actions, 1, p=probs[j])[0]
+            prob_action[j] = probs[j][action[j][0]]
+
+        return action.astype(int)
+
+
+
     def train_policy(self, xs, actions, TD_target, prob_old, GAE, lr, iter,E_pi,E_v):
-        elf.iter_policy += 1
+        self.iter_policy += 1
         batch_size = xs.shape[0]
         train_eval = self.train_op
         L_pi_eval=self.E_pi_op
@@ -388,7 +424,7 @@ class initialize_network_DeepPPG():
 
         #optimize L_pi
         for m in range(E_pi):
-            _,L_pi,l_clip,L_entrop, ProbActions = self.sess.run([L_pi_eval,self.L_pi,self.loss_actor_op,self.loss_entropy , predict_eval],
+            _,L_pi,L_clip,L_entrop, ProbActions = self.sess.run([L_pi_eval,self.L_pi,self.loss_actor_op,self.loss_entropy , predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
@@ -408,32 +444,19 @@ class initialize_network_DeepPPG():
             
 
         # Log to tensorboard
-        self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(loss) / batch_size,
+        self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(L_pi) / batch_size,
                                 index=self.iter_policy)
-        self.log_to_tensorboard(tag='Loss_Actor', group=self.vehicle_name, value=LA.norm(loss_actor) / batch_size,
+        self.log_to_tensorboard(tag='Loss_Actor', group=self.vehicle_name, value=LA.norm(L_v) / batch_size,
                                 index=self.iter_policy)
-        self.log_to_tensorboard(tag='Loss_Critic', group=self.vehicle_name, value=LA.norm(loss_critic) / batch_size,
+        self.log_to_tensorboard(tag='Loss_Critic', group=self.vehicle_name, value=LA.norm(L_clip) / batch_size,
                                 index=self.iter_policy)
-        self.log_to_tensorboard(tag='Loss_Entropy', group=self.vehicle_name, value=LA.norm(loss_entropy) / batch_size,
+        self.log_to_tensorboard(tag='Loss_Entropy', group=self.vehicle_name, value=LA.norm(L_entrop) / batch_size,
                                 index=self.iter_policy)
         self.log_to_tensorboard(tag='Learning Rate', group=self.vehicle_name, value=lr, index=self.iter_policy)
-        self.log_to_tensorboard(tag='MaxProb', group=self.vehicle_name, value=MaxProbActions, index=self.iter_policy)
+        #self.log_to_tensorboard(tag='MaxProb', group=self.vehicle_name, value=MaxProbActions, index=self.iter_policy)
 
 
-    def action_selection(self, state):
-        action = np.zeros(dtype=int, shape=[state.shape[0], 1])
-        prob_action = np.zeros(dtype=float, shape=[state.shape[0], 1])
-
-        probs = self.sess.run(self.pi,
-                              feed_dict={self.batch_size: state.shape[0], self.learning_rate: 0.0001,
-                                         self.X1: state,
-                                         self.actions: action})
-
-        for j in range(probs.shape[0]):
-            action[j] = np.random.choice(self.num_actions, 1, p=probs[j])[0]
-            prob_action[j] = probs[j][action[j][0]]
-
-        return action.astype(int)
+    
     
 
     def log_to_tensorboard(self, tag, group, value, index):
@@ -455,7 +478,7 @@ class initialize_network_DeepPPG():
         ##feeddict to optimize l joint
         ##Optimize L joint wrt theta_pi and theta_v
 
-        elf.iter_policy += 1
+        self.iter_policy += 1
         batch_size = xs.shape[0]
         joint_eval = self.E_joint_op
         train_eval = self.train_op

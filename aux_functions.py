@@ -357,6 +357,7 @@ def train_PPO(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
             next_states[ii, :, :, :] = next_state_m[...]
             actions[ii] = action_m
             rewards[ii] = reward_m
+
             p_a[ii] = p_a_m
             crashes[ii] = ~crash_m
 
@@ -496,12 +497,14 @@ def blit_text(surface, text, pos, font, color=pygame.Color('black')):
 
 #####################################################################
 def policy_PPG(curr_state, agent):
-    action, p_a = agent.network_model.action_selection_with_prob(curr_state)
+    action, p_a, probs = agent.network_model.action_selection_with_prob(curr_state)
     action_type = 'Prob'
     return action[0], p_a, action_type
 
 def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num,name_agent):
-    buff = []
+    print("inside PPG1")
+    buff = {}
+    buff[name_agent] = []
     E_pi=algorithm_cfg.E_pi
     E_v=algorithm_cfg.E_v
     batch_size = algorithm_cfg.policy_batch_size
@@ -510,6 +513,7 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
     episode_len_total = len(data_tuple_total)
     num_batches = int(np.ceil(episode_len_total / float(batch_size)))
     for i in range(num_batches):
+        print('ppg2')
         start_ind = i * batch_size
         end_ind = np.min((len(data_tuple_total), (i + 1) * batch_size))
         data_tuple = data_tuple_total[start_ind: end_ind]
@@ -521,21 +525,34 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
         crashes = np.zeros(shape=(episode_len, 1))
         rewards = np.zeros(shape=(episode_len, 1))
         p_a = np.zeros(shape=(episode_len,1))
+        print('ppg3')
 
         for ii, m in enumerate(data_tuple):
+            print('1')
             curr_state_m, action_m, next_state_m, reward_m, p_a_m, crash_m = m
             curr_states[ii, :, :, :] = curr_state_m[...]
             next_states[ii, :, :, :] = next_state_m[...]
-            
-
+            print('3')
+            print(m)
+            print(np.shape(m))
+            print(np.shape(action_m))
+            print(np.shape(reward_m))
             actions[ii] = action_m
+            print("540")
             rewards[ii] = reward_m
+            print("542")
+            print(np.shape(p_a))
+            print(np.shape(p_a_m))
+            print(p_a_m)
             p_a[ii] = p_a_m
+            print("544")
             crashes[ii] = ~crash_m
-
+            print('2')
+        print("inside ppg2")    
  #       for i in range(train_epoch_per_batch):
         V_s = agent.network_model.get_state_value(curr_states)
         V_s_ = agent.network_model.get_state_value(next_states)
+        print("inside ppg3")
         TD_target = rewards + gamma*V_s_* crashes
         delta = TD_target - V_s     
         GAE_array = []
@@ -549,25 +566,28 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
         GAE -= np.mean(GAE)
         GAE /= (np.std(GAE) + 1e-8)
         # TODO: zero mean unit std GAE
-        p_a=prob_actions(curr_states)
-        buff.append([curr_states,TD_target,p_a])
-        agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)        
+        #p_a=prob_actions(curr_states)
+        print("before append")
+        buff[name_agent].append([curr_states,TD_target,p_a])
+        print("after append")
+        agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)       
         ##add buffer and return and append  to main buffer
-    return buff
+        print(np.shape(buff))
+    return buff[name_agent]
             
-def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff):
+def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_agent):
     ###minibatches 
     batch_size = algorithm_cfg.aux_batch_size
-    aux_iter = algorithm_cfg.E_v
+    aux_iter = algorithm_cfg.E_aux
     train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
     lmbda = algorithm_cfg.lmbda
-    episode_len_total = len(buff)
-    num_batches = int(np.ceil(episode_len_total / float(batch_size)))
+#   episode_len_total = len(buff)
+#   num_batches = int(np.ceil(episode_len_total / float(batch_size)))
 #    for i in range(episode_len_total):
 #        start_ind = i * batch_size
 #        end_ind = np.min((len(buffer), (i + 1) * batch_size))
 #        data_tuple = buffer[start_ind: end_ind]
-#        episode_len = len(data_tuple)
+    episode_len = len(buff)
 
 #        curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
 #        next_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
@@ -580,6 +600,8 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff):
     for i in range(aux_iter):
 
         for ii, m in enumerate(buff):
+            print(ii)
+            print(m)
             curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
             td_targ = np.zeros(shape=(episode_len,1))
             p_a = np.zeros(shape=(episode_len,1))

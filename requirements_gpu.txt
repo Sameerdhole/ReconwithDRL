@@ -31,9 +31,7 @@ idna
 imageio
 imageio-ffmpeg==0.3.0
 importlib-metadata
-Keras-Applications
-keras-nightly
-Keras-Preprocessing
+keras==2.0.8
 kiwisolver
 Markdown
 matplotlib
