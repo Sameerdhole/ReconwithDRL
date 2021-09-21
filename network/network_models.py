@@ -385,8 +385,6 @@ class initialize_network_DeepPPG():
                                          self.X1: state,
                                          self.actions: action})
 
-        print(np.shape(probs))
-        print(probs)
         for j in range(probs.shape[0]):
             action[j] = np.random.choice(self.num_actions, 1, p=probs[j])[0]
             prob_action[j] = probs[j][action[j][0]]
@@ -477,6 +475,7 @@ class initialize_network_DeepPPG():
         ##init params
         ##feeddict to optimize l joint
         ##Optimize L joint wrt theta_pi and theta_v
+        print(" inside network_model train_aux")
 
         self.iter_policy += 1
         batch_size = xs.shape[0]
