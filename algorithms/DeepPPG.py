@@ -8,6 +8,8 @@ from aux_functions import *
 import os
 from util.transformations import euler_from_quaternion
 from configs.read_cfg import read_cfg, update_algorithm_cfg
+import numpy as np
+import traceback
 
 
 def DeepPPG(cfg, env_process, env_folder):
@@ -41,6 +43,7 @@ def DeepPPG(cfg, env_process, env_folder):
     posit = {}
     name_agent_list = []
     data_tuple = {}
+
     agent = {}
     epi_num = {}
     if cfg.mode == 'train':
@@ -90,7 +93,8 @@ def DeepPPG(cfg, env_process, env_folder):
     
     episode = {}
     active = True
-    phases = 1
+    phases = True
+    phase_count = 0
     print_interval = 1
     automate = True
     choose = False
@@ -108,7 +112,7 @@ def DeepPPG(cfg, env_process, env_folder):
     distance_array = {}
     epi_env_array = {}
     log_files = {}
-    probs=[]
+
 
     # If the phase is inference force the num_agents to 1
     hyphens = '-' * int((80 - len('Log files')) / 2)
@@ -141,11 +145,13 @@ def DeepPPG(cfg, env_process, env_folder):
             active, automate, algorithm_cfg, client = check_user_input(active, automate, agent[name_agent], client,
                                                                        old_posit[name_agent], initZ, fig_z, fig_nav,
                                                                        env_folder, cfg, algorithm_cfg)
-            if phases:
-                global_buffer = []
-
+            global_buffer = {}
+            global_buffer[name_agent] = []
+            while phases:
+                
                 if automate:
-                    buff = []
+                    buff = {}
+                    buff[name_agent] = []
 
                     if cfg.mode == 'train':
 
@@ -192,8 +198,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                         agent_this_drone = global_agent
                                     else:
                                         agent_this_drone = agent[name_agent]
-
-                                    probs,action, p_a, action_type = policy_PPG(current_state[name_agent], agent_this_drone)
+                                    action, p_a, action_type = policy_PPG(current_state[name_agent], agent_this_drone)
                                     # print('Evaluated Policy')
                                     action_word = translate_action(action, algorithm_cfg.num_actions)
                                     # Take the action
@@ -255,32 +260,32 @@ def DeepPPG(cfg, env_process, env_folder):
 
 
                                         else:
-                                            agent[name_agent].network_model.log_to_tensorboard(tag='Return',
-                                                                                               group=name_agent,
-                                                                                               value=ret[name_agent],
-                                                                                               index=epi_num[name_agent])
+                                            #agent[name_agent].network_model.log_to_tensorboard(tag='Return',
+                                            #                                                   group=name_agent,
+                                            #                                                   value=ret[name_agent],
+                                            #                                                   index=epi_num[name_agent])
 
-                                            agent[name_agent].network_model.log_to_tensorboard(tag='Safe Flight',
-                                                                                               group=name_agent,
-                                                                                               value=distance[name_agent],
-                                                                                               index=epi_num[name_agent])
+                                            #agent[name_agent].network_model.log_to_tensorboard(tag='Safe Flight',
+                                            #                                                   group=name_agent,
+                                            #                                                   value=distance[name_agent],
+                                            #                                                   index=epi_num[name_agent])
 
-                                            agent[name_agent].network_model.log_to_tensorboard(tag='Episode Length',
-                                                                                               group=name_agent,
-                                                                                               value=len(
-                                                                                                   data_tuple[name_agent]),
-                                                                                               index=epi_num[name_agent])
+                                            #agent[name_agent].network_model.log_to_tensorboard(tag='Episode Length',
+                                            #                                                   group=name_agent,
+                                            #                                                   value=len(
+                                            #                                                       data_tuple[name_agent]),
+                                            #                                                   index=epi_num[name_agent])
 
                                             # Train episode
-                                            buff=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                            buff[name_agent]=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
                                                             algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                                            algorithm_cfg.gamma, epi_num[name_agent],name_agent )
+                                                            algorithm_cfg.gamma, epi_num[name_agent],name_agent)
                                             #compute and store current policy for all states in  buffer B
 
                                             c = agent_this_drone.network_model.get_vars()[15][0]
-                                            agent_this_drone.network_model.log_to_tensorboard(tag='weight', group=name_agent,
-                                                                                              value=c[0],
-                                                                                              index=epi_num[name_agent])
+                                            #agent_this_drone.network_model.log_to_tensorboard(tag='weight', group=name_agent,
+                                            #                                                  value=c[0],
+                                            #                                                  index=epi_num[name_agent])
 
                                             data_tuple[name_agent] = []
                                             epi_num[name_agent] += 1
@@ -318,15 +323,15 @@ def DeepPPG(cfg, env_process, env_folder):
                                     for i in range(0, len(gpu_memory)):
                                         tag_mem = 'GPU' + str(i) + '-Memory-GB'
                                         tag_util = 'GPU' + str(i) + 'Utilization-%'
-                                        agent_this_drone.network_model.log_to_tensorboard(tag=tag_mem, group='SystemStats',
-                                                                                          value=gpu_memory[i],
-                                                                                          index=iter[name_agent])
-                                        agent_this_drone.network_model.log_to_tensorboard(tag=tag_util, group='SystemStats',
-                                                                                          value=gpu_utilization[i],
-                                                                                          index=iter[name_agent])
-                                    agent_this_drone.network_model.log_to_tensorboard(tag='Memory-GB', group='SystemStats',
-                                                                                      value=sys_memory,
-                                                                                      index=iter[name_agent])
+                                        #agent_this_drone.network_model.log_to_tensorboard(tag=tag_mem, group='SystemStats',
+                                        #                                                  value=gpu_memory[i],
+                                        #                                                  index=iter[name_agent])
+                                        #agent_this_drone.network_model.log_to_tensorboard(tag=tag_util, group='SystemStats',
+                                        #                                                  value=gpu_utilization[i],
+                                        #                                                  index=iter[name_agent])
+                                    #agent_this_drone.network_model.log_to_tensorboard(tag='Memory-GB', group='SystemStats',
+                                        #                                              value=sys_memory,
+                                        #                                              index=iter[name_agent])
 
                                     s_log = '{:<6s} - Level {:>2d} - Iter: {:>6d}/{:<5d} {:<8s}-{:>5s} lr: {:>1.8f} Ret = {:>+6.4f} Last Crash = {:<5d} t={:<1.3f} SF = {:<5.4f}  Reward: {:<+1.4f}  '.format(
                                         name_agent,
@@ -352,10 +357,10 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                           np.squeeze(new_state[name_agent], axis=0))))
                                         cv2.waitKey(1)
                                     ##Append to buffer##
-                                    for i in range(len(buff)):
-                                        global_buffer.append(buff[i])
+                                    
+                                    global_buffer[name_agent].append(buff[name_agent])
                                     if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
-                                        print(automate)
+                                        print("above automate false")
                                         automate = False
 
                                     iter[name_agent]+=1
@@ -431,23 +436,27 @@ def DeepPPG(cfg, env_process, env_folder):
          #           global_buffer(name_agent).append(probs)
 
                 else:
-
+                    print("above train_AUX")
                     train_AUX(algorithm_cfg, agent_this_drone,
                                 algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                algorithm_cfg.gamma, epi_num[name_agent],global_buffer)
+                                algorithm_cfg.gamma, epi_num[name_agent],global_buffer[name_agent], name_agent)
+                    print("below train_AUX") 
                     automate = True
+                    phase_count+=1
+                    global_buffer = {}
+                    global_buffer[name_agent] = []
 
-                if phases % cfg.phases == 0 :
-                    phases=0
+                if phase_count % algorithm_cfg.phases == 0 :
+                    phases = False
                     active=False
-                else:
-                    phases+=1
+
+                    
 
 
         except Exception as e:
             if str(e) == 'cannot reshape array of size 1 into shape (0,0,3)':
                 print('Recovering from AirSim error')
-
+                print(traceback.format_exc())
                 client, old_posit, initZ = connect_drone(ip_address=cfg.ip_address, phase=cfg.mode,
                                                          num_agents=cfg.num_agents, client=client)
                 time.sleep(2)
