@@ -148,8 +148,11 @@ def DeepPPG(cfg, env_process, env_folder):
             global_buffer = {}
             global_buffer[name_agent] = []
             while phases:
-                
-                if automate:
+                print("after phases")
+
+                print(automate)
+
+                if automate == True:
                     buff = {}
                     buff[name_agent] = []
 
@@ -360,8 +363,10 @@ def DeepPPG(cfg, env_process, env_folder):
                                     
                                     global_buffer[name_agent].append(buff[name_agent])
                                     if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
-                                        print("above automate false")
+                                        
                                         automate = False
+                                        wait_for_others[name_agent] = True
+                                        print(automate)
 
                                     iter[name_agent]+=1
                         # if iter % algorithm_cfg.communication_interval == 0:
