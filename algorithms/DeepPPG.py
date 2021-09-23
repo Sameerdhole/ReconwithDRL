@@ -87,7 +87,6 @@ def DeepPPG(cfg, env_process, env_folder):
         old_posit[name_agent] = client.simGetVehiclePose(vehicle_name=name_agent)
 
     # Initialize variables
-
     # iter = 1
     # num_collisions = 0
     
@@ -148,13 +147,8 @@ def DeepPPG(cfg, env_process, env_folder):
             global_buffer = {}
             global_buffer[name_agent] = []
             while phases:
-                
-                if automate:
-                    buff = {}
-                    buff[name_agent] = []
-
+                while automate:
                     if cfg.mode == 'train':
-
                         if iter[name_agent] % algorithm_cfg.switch_env_steps == 0:
                             switch_env = True
                         else:
@@ -256,7 +250,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                                      num_agents=cfg.num_agents,
                                                                                      client=client)
                                             time.sleep(2)
-                                            wait_for_others[name_agent] = False
+                                            #wait_for_others[name_agent] = False
 
 
                                         else:
@@ -304,12 +298,12 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                                             epi_num[name_agent])
 
                                             # if all are waiting for others, then we can reset.
-                                            if all(wait_for_others.values()):
+                                           ''' if all(wait_for_others.values()):
                                                 # Now we can communicate weights
                                                 print('Communicating the weights and averaging them')
                                                 communicate_across_agents(agent, name_agent_list, algorithm_cfg)
                                                 for n in name_agent_list:
-                                                    wait_for_others[n] = False
+                                                    wait_for_others[n] = False'''
 
 
 
@@ -369,7 +363,6 @@ def DeepPPG(cfg, env_process, env_folder):
                         #     communicate_across_agents(agent, name_agent_list, algorithm_cfg)
 
                         # iter += 1
-
                     elif cfg.mode == 'infer':
                         # Inference phase
                         agent_state = agent[name_agent].GetAgentState()
@@ -431,11 +424,7 @@ def DeepPPG(cfg, env_process, env_folder):
 
                             print(s_log)
                             log_files[name_agent].write(s_log + '\n')
-         #########Compute and store current policy############
-         #        for _ in global_buffer():
-         #           global_buffer(name_agent).append(probs)
-
-                else:
+                while(not automate):
                     print("above train_AUX")
                     train_AUX(algorithm_cfg, agent_this_drone,
                                 algorithm_cfg.learning_rate, algorithm_cfg.input_size,
@@ -448,9 +437,7 @@ def DeepPPG(cfg, env_process, env_folder):
 
                 if phase_count % algorithm_cfg.phases == 0 :
                     phases = False
-                    active=False
-
-                    
+                    active=False    
 
 
         except Exception as e:
