@@ -148,6 +148,8 @@ def DeepPPG(cfg, env_process, env_folder):
             global_buffer[name_agent] = []
             while phases:
                 while automate:
+                    buff = {}
+                    buff[name_agent] = []
                     if cfg.mode == 'train':
                         if iter[name_agent] % algorithm_cfg.switch_env_steps == 0:
                             switch_env = True
@@ -250,7 +252,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                                      num_agents=cfg.num_agents,
                                                                                      client=client)
                                             time.sleep(2)
-                                            #wait_for_others[name_agent] = False
+                                            wait_for_others[name_agent] = False
 
 
                                         else:
@@ -298,12 +300,12 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                                             epi_num[name_agent])
 
                                             # if all are waiting for others, then we can reset.
-                                           ''' if all(wait_for_others.values()):
+                                            if all(wait_for_others.values()):
                                                 # Now we can communicate weights
                                                 print('Communicating the weights and averaging them')
                                                 communicate_across_agents(agent, name_agent_list, algorithm_cfg)
                                                 for n in name_agent_list:
-                                                    wait_for_others[n] = False'''
+                                                    wait_for_others[n] = False
 
 
 
