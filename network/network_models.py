@@ -484,6 +484,7 @@ class initialize_network_DeepPPG():
         loss_eval = self.loss_op
         predict_eval = self.pi
         predict_state = self.state_value
+        L_v_eval=self.E_v_op
 
         #optimize L
 

@@ -552,18 +552,18 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
         GAE /= (np.std(GAE) + 1e-8)
         # TODO: zero mean unit std GAE
         #p_a=prob_actions(curr_states)
-        buff[name_agent].append([curr_states,TD_target,p_a])
+        buff[name_agent].append([curr_states, actions, TD_target,p_a])
         agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)       
         ##add buffer and return and append  to main buffer
     return buff[name_agent]
             
 def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_agent):
     ###minibatches 
-    print("inside Aux train_AUX")
     batch_size = algorithm_cfg.aux_batch_size
     aux_iter = algorithm_cfg.E_aux
     train_epoch_per_batch = algorithm_cfg.train_epoch_per_batch
     lmbda = algorithm_cfg.lmbda
+    
 #   episode_len_total = len(buff)
 #   num_batches = int(np.ceil(episode_len_total / float(batch_size)))
 #    for i in range(episode_len_total):
@@ -571,6 +571,7 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
 #        end_ind = np.min((len(buffer), (i + 1) * batch_size))
 #        data_tuple = buffer[start_ind: end_ind]
     episode_len = len(buff)
+    
 
 #        curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
 #        next_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
@@ -585,16 +586,20 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
         for ii, m in enumerate(buff):
            
             curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+            actions = np.zeros(shape=(episode_len, 1), dtype=int)
             td_targ = np.zeros(shape=(episode_len,1))
             p_a = np.zeros(shape=(episode_len,1))
-            curr_states, TD_targ, p_a = m
+            print("Above buff")
+            print(ii)
+            
+            curr_states, actions, TD_target, p_a = m
 
-            '''
+            
             V_s = agent.network_model.get_state_value(curr_states)
-            V_s_ = agent.network_model.get_state_value(next_states)
-            TD_target = rewards + gamma*V_s_* crashes
+            #V_s_ = agent.network_model.get_state_value(next_states)
+            #TD_target = rewards + gamma*V_s_* crashes
             delta = TD_target - V_s
-            '''
+            
                
             GAE_array = []
             GAE=0
@@ -606,7 +611,7 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
             # Normalize the reward to reduce variance in training
             GAE -= np.mean(GAE)
             GAE /= (np.std(GAE) + 1e-8)
-            agent.network_model.train_aux(curr_states, TD_target, p_a, GAE, lr)
+            agent.network_model.train_aux(curr_states, actions, TD_target, p_a, GAE, lr)
 
 
 def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):
