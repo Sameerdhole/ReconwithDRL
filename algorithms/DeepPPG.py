@@ -346,93 +346,95 @@ def DeepPPG(cfg, env_process, env_folder):
                     #     print('Communicating the weights and averaging them')
                     #     communicate_across_agents(agent, name_agent_list, algorithm_cfg)
 
-                        # iter += 1
-                elif cfg.mode == 'infer':
-                    # Inference phase
-                    agent_state = agent[name_agent].GetAgentState()
-                    if agent_state.has_collided:
-                        print('Drone collided')
-                        print("Total distance traveled: ", np.round(distance[name_agent], 2))
-                        active = False
-                        client.moveByVelocityAsync(vx=0, vy=0, vz=0, duration=1, vehicle_name=name_agent).join()
+                    # iter += 1
+                    elif cfg.mode == 'infer':
+                        # Inference phase
+                        agent_state = agent[name_agent].GetAgentState()
+                        if agent_state.has_collided:
+                            print('Drone collided')
+                            print("Total distance traveled: ", np.round(distance[name_agent], 2))
+                            active = False
+                            client.moveByVelocityAsync(vx=0, vy=0, vz=0, duration=1, vehicle_name=name_agent).join()
 
-                        if nav_x:  # Nav_x is empty if the drone collides in first iteration
-                            ax_nav.plot(nav_x.pop(), nav_y.pop(), 'r*', linewidth=20)
-                        file_path = env_folder + 'results/'
-                        fig_z.savefig(file_path + 'altitude_variation.png', dpi=500)
-                        fig_nav.savefig(file_path + 'navigation.png', dpi=500)
-                        close_env(env_process)
-                        print('Figures saved')
-                    else:
-                        posit[name_agent] = client.simGetVehiclePose(vehicle_name=name_agent)
-                        distance[name_agent] = distance[name_agent] + np.linalg.norm(np.array(
-                            [old_posit[name_agent].position.x_val - posit[name_agent].position.x_val,old_posit[name_agent].position.y_val - posit[name_agent].position.y_val]))
-                        # altitude[name_agent].append(-posit[name_agent].position.z_val+p_z)
-                        altitude[name_agent].append(-posit[name_agent].position.z_val - f_z)
+                            if nav_x:  # Nav_x is empty if the drone collides in first iteration
+                                ax_nav.plot(nav_x.pop(), nav_y.pop(), 'r*', linewidth=20)
+                            file_path = env_folder + 'results/'
+                            fig_z.savefig(file_path + 'altitude_variation.png', dpi=500)
+                            fig_nav.savefig(file_path + 'navigation.png', dpi=500)
+                            close_env(env_process)
+                            print('Figures saved')
+                        else:
+                            posit[name_agent] = client.simGetVehiclePose(vehicle_name=name_agent)
+                            distance[name_agent] = distance[name_agent] + np.linalg.norm(np.array(
+                                [old_posit[name_agent].position.x_val - posit[name_agent].position.x_val,old_posit[name_agent].position.y_val - posit[name_agent].position.y_val]))
+                            # altitude[name_agent].append(-posit[name_agent].position.z_val+p_z)
+                            altitude[name_agent].append(-posit[name_agent].position.z_val - f_z)
 
-                        quat = (posit[name_agent].orientation.w_val, posit[name_agent].orientation.x_val,posit[name_agent].orientation.y_val, posit[name_agent].orientation.z_val)
-                        yaw = euler_from_quaternion(quat)[2]
+                            quat = (posit[name_agent].orientation.w_val, posit[name_agent].orientation.x_val,posit[name_agent].orientation.y_val, posit[name_agent].orientation.z_val)
+                            yaw = euler_from_quaternion(quat)[2]
 
-                        x_val = posit[name_agent].position.x_val
-                        y_val = posit[name_agent].position.y_val
-                        z_val = posit[name_agent].position.z_val
+                            x_val = posit[name_agent].position.x_val
+                            y_val = posit[name_agent].position.y_val
+                            z_val = posit[name_agent].position.z_val
 
-                        nav_x.append(env_cfg.alpha * x_val + env_cfg.o_x)
-                        nav_y.append(env_cfg.alpha * y_val + env_cfg.o_y)
-                        nav.set_data(nav_x, nav_y)
-                        nav_text.remove()
-                        nav_text = ax_nav.text(25, 55, 'Distance: ' + str(np.round(distance[name_agent], 2)),style='italic',
-                                                   bbox={'facecolor': 'white', 'alpha': 0.5})
+                            nav_x.append(env_cfg.alpha * x_val + env_cfg.o_x)
+                            nav_y.append(env_cfg.alpha * y_val + env_cfg.o_y)
+                            nav.set_data(nav_x, nav_y)
+                            nav_text.remove()
+                            nav_text = ax_nav.text(25, 55, 'Distance: ' + str(np.round(distance[name_agent], 2)),style='italic',
+                                                       bbox={'facecolor': 'white', 'alpha': 0.5})
 
-                        line_z.set_data(np.arange(len(altitude[name_agent])), altitude[name_agent])
-                        ax_z.set_xlim(0, len(altitude[name_agent]))
-                        fig_z.canvas.draw()
-                        fig_z.canvas.flush_events()
+                            line_z.set_data(np.arange(len(altitude[name_agent])), altitude[name_agent])
+                            ax_z.set_xlim(0, len(altitude[name_agent]))
+                            fig_z.canvas.draw()
+                            fig_z.canvas.flush_events()
 
-                        current_state[name_agent] = agent[name_agent].get_state()
-                        action,p_a ,action_type = policy_PPO(current_state[name_agent], agent[name_agent])
-                        action_word = translate_action(action, algorithm_cfg.num_actions)
-                        # Take continuous action
-                        # agent[name_agent].take_action(action, algorithm_cfg.num_actions, Mode='static')
+                            current_state[name_agent] = agent[name_agent].get_state()
+                            action,p_a ,action_type = policy_PPO(current_state[name_agent], agent[name_agent])
+                            action_word = translate_action(action, algorithm_cfg.num_actions)
+                            # Take continuous action
+                            # agent[name_agent].take_action(action, algorithm_cfg.num_actions, Mode='static')
 
-                        agent[name_agent].take_action(action, algorithm_cfg.num_actions, Mode='static')
-                        old_posit[name_agent] = posit[name_agent]
+                            agent[name_agent].take_action(action, algorithm_cfg.num_actions, Mode='static')
+                            old_posit[name_agent] = posit[name_agent]
 
-                        # Verbose and log making
-                        s_log = 'Position = ({:<3.2f},{:<3.2f}, {:<3.2f}) Orientation={:<1.3f} Predicted Action: {:<8s}  '.format(
-                            x_val, y_val, z_val, yaw, action_word
-                        )
+                            # Verbose and log making
+                            s_log = 'Position = ({:<3.2f},{:<3.2f}, {:<3.2f}) Orientation={:<1.3f} Predicted Action: {:<8s}  '.format(
+                                x_val, y_val, z_val, yaw, action_word
+                            )
 
-                        print(s_log)
-                        log_files[name_agent].write(s_log + '\n')
-            while(not automate):
-                print("above train_AUX")
-                train_AUX(algorithm_cfg, agent_this_drone,algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                algorithm_cfg.gamma, epi_num[name_agent],global_buffer[name_agent], name_agent)
-                print("below train_AUX") 
-                automate = True
-                phase_count+=1
-                global_buffer = {}
-                global_buffer[name_agent] = []
+                            print(s_log)
+                            log_files[name_agent].write(s_log + '\n')
+                while(not automate):
+                    print("above train_AUX")
+                    for i in range(len(global_buffer[name_agent])):
 
-            if phase_count % algorithm_cfg.phases == 0 :
-                phases = False
-                active=False    
+                        train_AUX(algorithm_cfg, agent_this_drone,algorithm_cfg.learning_rate, algorithm_cfg.input_size,
+                                    algorithm_cfg.gamma, epi_num[name_agent],global_buffer[name_agent][i], name_agent)
+                    print("below train_AUX") 
+                    automate = True
+                    phase_count+=1
+                    global_buffer = {}
+                    global_buffer[name_agent] = []
+
+                if phase_count % algorithm_cfg.phases == 0 :
+                    phases = False
+                    active=False    
 
 
-    except Exception as e:
-        if str(e) == 'cannot reshape array of size 1 into shape (0,0,3)':
-            print('Recovering from AirSim error')
-            print(traceback.format_exc())
-            client, old_posit, initZ = connect_drone(ip_address=cfg.ip_address, phase=cfg.mode,num_agents=cfg.num_agents, client=client)
-            time.sleep(2)
-            agent[name_agent].client = client
-            #wait_for_others[name_agent] = False
-        else:
-            print('------------- Error -------------')
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print(exc_type, fname, exc_tb.tb_lineno)
-            print(exc_obj)
-            automate = False
-            print('Hit r and then backspace to start from this point')
+        except Exception as e:
+            if str(e) == 'cannot reshape array of size 1 into shape (0,0,3)':
+                print('Recovering from AirSim error')
+                print(traceback.format_exc())
+                client, old_posit, initZ = connect_drone(ip_address=cfg.ip_address, phase=cfg.mode,num_agents=cfg.num_agents, client=client)
+                time.sleep(2)
+                agent[name_agent].client = client
+                #wait_for_others[name_agent] = False
+            else:
+                print('------------- Error -------------')
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(exc_type, fname, exc_tb.tb_lineno)
+                print(exc_obj)
+                automate = False
+                print('Hit r and then backspace to start from this point')
