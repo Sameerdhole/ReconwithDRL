@@ -485,7 +485,7 @@ class initialize_network_DeepPPG():
         predict_eval = self.pi
         predict_state = self.state_value
         L_v_eval=self.E_v_op
-
+        print('for loop1')
         #optimize L
 
         _,L_a,L_o,L_kl, ProbActions = self.sess.run([joint_eval,self.L_aux,self.loss_op,self.kl , predict_eval],
@@ -495,7 +495,7 @@ class initialize_network_DeepPPG():
                                                         self.TD_target: TD_target,
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
-
+        print('for loop2')
         #optimize L_v
         _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
@@ -505,7 +505,7 @@ class initialize_network_DeepPPG():
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
 
-
+        print(L_a, L_o, L_kl, L_v)
 
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):
