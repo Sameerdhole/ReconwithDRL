@@ -268,6 +268,9 @@ def DeepPPG(cfg, env_process, env_folder):
                                         buff[name_agent]=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
                                                             algorithm_cfg.learning_rate, algorithm_cfg.input_size,
                                                             algorithm_cfg.gamma, epi_num[name_agent],name_agent)
+                                        print('buff shape below train_PPG')
+
+                                        print(np.shape(buff))
                                         #compute and store current policy for all states in  buffer B
 
                                         c = agent_this_drone.network_model.get_vars()[15][0]
@@ -406,7 +409,9 @@ def DeepPPG(cfg, env_process, env_folder):
                             print(s_log)
                             log_files[name_agent].write(s_log + '\n')
                 while(not automate):
-                    print("above train_AUX")
+                    print("global_buffer00")
+                    print(np.shape(global_buffer[name_agent]))
+                    #print(np.shape(global_buffer[name_agent][0]))
                     for i in range(len(global_buffer[name_agent])):
 
                         train_AUX(algorithm_cfg, agent_this_drone,algorithm_cfg.learning_rate, algorithm_cfg.input_size,
