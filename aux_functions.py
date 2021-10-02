@@ -553,7 +553,7 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
         #p_a=prob_actions(curr_states)
         buff.append([curr_states, actions, TD_target,p_a])
         print("buff after append")
-        print(buff)
+        
         agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)       
         ##add buffer and return and append  to main buffer
     return buff
@@ -587,8 +587,8 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
     actions = np.zeros(shape=(episode_len, 1), dtype=int)
     td_targ = np.zeros(shape=(episode_len,1))
     p_a = np.zeros(shape=(episode_len,1))
-    print(ii)    
-    curr_states, actions, TD_target, p_a = m
+       
+    curr_states, actions, TD_target, p_a = buff
     print("above get_state_value")
     V_s = agent.network_model.get_state_value(curr_states)
     print("below get_state_value")

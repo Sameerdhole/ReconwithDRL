@@ -247,6 +247,9 @@ class initialize_network_DeepPPG():
             # self.target_baseline = tf.placeholder(tf.float32, shape=[None], name='baseline')
             self.actions = tf.placeholder(tf.int32, shape=[None, 1], name='Actions')
             self.TD_target = tf.placeholder(tf.float32, shape=[None, 1], name='TD_target')
+
+            
+
             self.prob_old = tf.placeholder(tf.float32, shape=[None, 1], name='prob_old')
             self.GAE = tf.placeholder(tf.float32, shape=[None, 1], name='GAE')
             self.D_target = tf.placeholder(tf.float32, shape=[None, 1], name='D_target')
@@ -259,6 +262,8 @@ class initialize_network_DeepPPG():
             ##get_state values feeds params to model.state_value which in turn calls c3f2 model and returns state value 
             self.pi = self.model_pi.action_probs
             self.state_value = self.model_v.state_value
+
+            self.old_prob = self.pi
 
             self.ind = tf.one_hot(tf.squeeze(self.actions), cfg.num_actions)
             self.pi_a = tf.expand_dims(tf.reduce_sum(tf.multiply(self.pi, self.ind), axis=1), axis=1)
@@ -284,7 +289,7 @@ class initialize_network_DeepPPG():
             self.L_v = 0.5*mse_loss(self.state_value, self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            self.kl=kd(tf.log(self.prob_old),tf.log(self.pi))
+            self.kl=kd(self.pi, self.prob_old)
             
             #Ljoint
             self.loss_op = self.L_aux +tf.multiply(float(self.beta),self.kl)
@@ -505,7 +510,7 @@ class initialize_network_DeepPPG():
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
 
-        print(L_a, L_o, L_kl, L_v)
+        print(L_a,L_o, L_v, L_kl)
 
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):
