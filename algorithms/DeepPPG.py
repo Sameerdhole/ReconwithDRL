@@ -266,9 +266,9 @@ def DeepPPG(cfg, env_process, env_folder):
                                         buff=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
                                                             algorithm_cfg.learning_rate, algorithm_cfg.input_size,
                                                             algorithm_cfg.gamma, epi_num[name_agent],name_agent)
-                                        print('buff shape below train_PPG')
+                                        
 
-                                        print(np.shape(buff))
+                                        
                                         #compute and store current policy for all states in  buffer B
 
                                         c = agent_this_drone.network_model.get_vars()[15][0]
@@ -337,7 +337,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                     cv2.waitKey(1)
                                     ##Append to buffer##
                                     
-                                for mini in range(buff):
+                                for mini in range(len(buff)):
                                     global_buffer.append(buff[mini])
                                 if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
                                     print("above automate false")
@@ -408,10 +408,11 @@ def DeepPPG(cfg, env_process, env_folder):
                             print(s_log)
                             log_files[name_agent].write(s_log + '\n')
                 while(not automate):
-                    print("global_buffer00")
-                    print(np.shape(global_buffer))
+                    
+                    
                     for i in range(algorithm_cfg.E_aux):
                         for j in range(len(global_buffer)):
+                            print(j)
                             train_AUX(algorithm_cfg, agent_this_drone,algorithm_cfg.learning_rate, algorithm_cfg.input_size,
                                         algorithm_cfg.gamma, epi_num[name_agent],global_buffer[j], name_agent)
                     print("below train_AUX") 
