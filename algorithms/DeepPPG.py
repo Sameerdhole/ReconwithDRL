@@ -144,12 +144,10 @@ def DeepPPG(cfg, env_process, env_folder):
             active, automate, algorithm_cfg, client = check_user_input(active, automate, agent[name_agent], client,
                                                                        old_posit[name_agent], initZ, fig_z, fig_nav,
                                                                        env_folder, cfg, algorithm_cfg)
-            global_buffer = {}
-            global_buffer[name_agent] = []
+            global_buffer = []
             while phases:
                 while automate:
-                    buff = {}
-                    buff[name_agent] = []
+                    buff = []
                     if cfg.mode == 'train':
                         if iter[name_agent] % algorithm_cfg.switch_env_steps == 0:
                             switch_env = True
@@ -265,7 +263,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                         #                                                   index=epi_num[name_agent])
 
                                         # Train episode
-                                        buff[name_agent]=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                        buff=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
                                                             algorithm_cfg.learning_rate, algorithm_cfg.input_size,
                                                             algorithm_cfg.gamma, epi_num[name_agent],name_agent)
                                         print('buff shape below train_PPG')
@@ -339,7 +337,8 @@ def DeepPPG(cfg, env_process, env_folder):
                                     cv2.waitKey(1)
                                     ##Append to buffer##
                                     
-                                global_buffer[name_agent].append(buff[name_agent])
+                                for mini in range(buff):
+                                    global_buffer.append(buff[mini])
                                 if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
                                     print("above automate false")
                                     automate = False
@@ -410,17 +409,15 @@ def DeepPPG(cfg, env_process, env_folder):
                             log_files[name_agent].write(s_log + '\n')
                 while(not automate):
                     print("global_buffer00")
-                    print(np.shape(global_buffer[name_agent]))
-                    #print(np.shape(global_buffer[name_agent][0]))
-                    for i in range(len(global_buffer[name_agent])):
-
-                        train_AUX(algorithm_cfg, agent_this_drone,algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                    algorithm_cfg.gamma, epi_num[name_agent],global_buffer[name_agent][i], name_agent)
+                    print(np.shape(global_buffer))
+                    for i in range(algorithm_cfg.E_aux):
+                        for j in range(len(global_buffer)):
+                            train_AUX(algorithm_cfg, agent_this_drone,algorithm_cfg.learning_rate, algorithm_cfg.input_size,
+                                        algorithm_cfg.gamma, epi_num[name_agent],global_buffer[j], name_agent)
                     print("below train_AUX") 
                     automate = True
                     phase_count+=1
-                    global_buffer = {}
-                    global_buffer[name_agent] = []
+                    global_buffer= []
 
                 if phase_count % algorithm_cfg.phases == 0 :
                     phases = False
