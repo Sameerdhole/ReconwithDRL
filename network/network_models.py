@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from network.loss_functions import huber_loss, mse_loss
+from network.loss_functions import huber_loss, mse_loss , kl_loss
 from network.network import C3F2, C3F2_ActorCriticShared, C3F2_Actor, C3F2_Critic
 from numpy import linalg as LA
 #from tensorflow.python.keras._impl.keras.losses import kullback_leibler_divergence as kd
@@ -290,7 +290,7 @@ class initialize_network_DeepPPG():
             self.L_v = mse_loss(0.707*self.state_value, 0.707*self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            self.kl=kld(self.pi, self.old_pi)
+            self.kl=kl_loss(self.pi, self.old_pi)
             
             #Ljoint
             self.loss_op = self.L_aux +tf.multiply(float(self.beta),self.kl)
