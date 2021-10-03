@@ -3,7 +3,8 @@ import numpy as np
 from network.loss_functions import huber_loss, mse_loss
 from network.network import C3F2, C3F2_ActorCriticShared, C3F2_Actor, C3F2_Critic
 from numpy import linalg as LA
-from tensorflow.python.keras._impl.keras.losses import kullback_leibler_divergence as kd
+#from tensorflow.python.keras._impl.keras.losses import kullback_leibler_divergence as kd
+from tensorflow.losses import KLDivergence as kld
 
 ###########################################################################
 # DeepPPO: Class
@@ -263,7 +264,7 @@ class initialize_network_DeepPPG():
             self.pi = self.model_pi.action_probs
             self.state_value = self.model_v.state_value
 
-            self.old_prob = self.pi
+            self.old_pi = self.pi
 
             self.ind = tf.one_hot(tf.squeeze(self.actions), cfg.num_actions)
             self.pi_a = tf.expand_dims(tf.reduce_sum(tf.multiply(self.pi, self.ind), axis=1), axis=1)
@@ -280,16 +281,16 @@ class initialize_network_DeepPPG():
             self.loss_entropy = 0.5*tf.reduce_mean(tf.multiply((tf.log(self.pi) + 1e-8), self.pi))
 
             #E_Pi loss
-            self.L_pi=self.loss_actor_op+tf.multiply(self.beta_s,self.loss_entropy )
+            self.L_pi=self.loss_actor_op+tf.multiply(self.loss_entropy ,self.beta_s)
             
             #L aux auxilary objective/L_value
             self.L_aux = 0.5*mse_loss(self.state_value, self.TD_target)
 
             #Value Loss
-            self.L_v = 0.5*mse_loss(self.state_value, self.TD_target)
+            self.L_v = mse_loss(0.707*self.state_value, 0.707*self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            self.kl=kd(self.pi, self.prob_old)
+            self.kl=kld(self.pi, self.old_pi)
             
             #Ljoint
             self.loss_op = self.L_aux +tf.multiply(float(self.beta),self.kl)
@@ -384,7 +385,7 @@ class initialize_network_DeepPPG():
     def action_selection_with_prob(self, state):
         action = np.zeros(dtype=int, shape=[state.shape[0], 1])
         prob_action = np.zeros(dtype=float, shape=[state.shape[0], 1])
-
+        self.old_pi = self.pi
         probs = self.sess.run(self.pi,
                               feed_dict={self.batch_size: state.shape[0], self.learning_rate: 0.0001,
                                          self.X1: state,
@@ -400,7 +401,7 @@ class initialize_network_DeepPPG():
     def action_selection(self, state):
         action = np.zeros(dtype=int, shape=[state.shape[0], 1])
         prob_action = np.zeros(dtype=float, shape=[state.shape[0], 1])
-
+        self.old_pi = self.pi
         probs = self.sess.run(self.pi,
                               feed_dict={self.batch_size: state.shape[0], self.learning_rate: 0.0001,
                                          self.X1: state,
@@ -480,7 +481,7 @@ class initialize_network_DeepPPG():
         ##init params
         ##feeddict to optimize l joint
         ##Optimize L joint wrt theta_pi and theta_v
-        print(" inside network_model train_aux")
+        #print(" inside network_model train_aux")
 
         self.iter_policy += 1
         batch_size = xs.shape[0]
@@ -490,7 +491,7 @@ class initialize_network_DeepPPG():
         predict_eval = self.pi
         predict_state = self.state_value
         L_v_eval=self.E_v_op
-        print('for loop1')
+        #print('for loop1')
         #optimize L
 
         _,L_a,L_o,L_kl, ProbActions = self.sess.run([joint_eval,self.L_aux,self.loss_op,self.kl , predict_eval],
@@ -510,7 +511,11 @@ class initialize_network_DeepPPG():
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
 
-        print(L_a,L_o, L_v, L_kl)
+        print(L_kl)
+        print(L_kl.shape)
+        print(self.pi)
+        print(self.old_pi)
+        print(self.pi.shape)
 
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):
