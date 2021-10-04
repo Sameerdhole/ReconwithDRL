@@ -18,9 +18,7 @@ def mse_loss(X, Y):
     return tf.reduce_sum(tf.square(err))
 
 def kl_loss(y_true,y_pred):
-    y_true = tf.clip_by_value(y_true, 0, 1)
-    y_pred = tf.clip_by_value(y_pred, 0, 1)
-    return tf.reduce_sum(y_true * tf.log(y_true / y_pred))
+    return y_true*(tf.exp(tf.log(self.pi_a+1e-10) - tf.log(self.prob_old+1e-10)))
 
 
 
