@@ -264,10 +264,14 @@ class initialize_network_DeepPPG():
             self.pi = self.model_pi.action_probs
             self.state_value = self.model_v.state_value
 
-            self.old_pi = self.pi
+            ##########
+            self.old_pi=tf.placeholder(tf.float32, shape=[None, 25], name='old_pi')
+            self.new_pi=tf.placeholder(tf.float32, shape=[None, 25], name='new_pi')
 
+            ##########
             self.ind = tf.one_hot(tf.squeeze(self.actions), cfg.num_actions)
             self.pi_a = tf.expand_dims(tf.reduce_sum(tf.multiply(self.pi, self.ind), axis=1), axis=1)
+
 
             self.ratio = tf.exp(tf.log(self.pi_a+1e-10) - tf.log(self.prob_old+1e-10))
             p1 = self.ratio * self.GAE
@@ -290,7 +294,7 @@ class initialize_network_DeepPPG():
             self.L_v = mse_loss(0.707*self.state_value, 0.707*self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            self.kl=kl_loss(self.pi, self.old_pi)
+            self.kl=kl_loss(self.new_pi, self.old_pi)
             
             #Ljoint
             self.loss_op = self.L_aux +tf.multiply(float(self.beta),self.kl)
@@ -489,18 +493,28 @@ class initialize_network_DeepPPG():
         train_eval = self.train_op
         loss_eval = self.loss_op
         predict_eval = self.pi
+        predict_old = self.old_pi
         predict_state = self.state_value
         L_v_eval=self.E_v_op
         #print('for loop1')
         #optimize L
 
-        _,L_a,L_o,L_kl, ProbActions = self.sess.run([joint_eval,self.L_aux,self.loss_op,self.kl , predict_eval],
+        #self.all_vars
+        ProbActions2=self.sess.run(self.pi)
+                                             
+
+        _,L_a,L_o,L_kl, ProbActions1 = self.sess.run([joint_eval,self.L_aux,self.loss_op,self.kl , predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
                                                         self.TD_target: TD_target,
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
+        
+        L_kl = self.sess.run([self.kl],feed_dict={self.pi:ProbActions1,
+                                             self.old_pi:ProbActions2})
+
+
         print('for loop2')
         #optimize L_v
         _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
