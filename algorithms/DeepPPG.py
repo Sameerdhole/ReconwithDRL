@@ -272,6 +272,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                         #compute and store current policy for all states in  buffer B
 
                                         c = agent_this_drone.network_model.get_vars()[15][0]
+                                        print(agent_this_drone.network_model.get_vars())
                                         #agent_this_drone.network_model.log_to_tensorboard(tag='weight', group=name_agent,
                                         #                                                  value=c[0],
                                         #                                                  index=epi_num[name_agent])

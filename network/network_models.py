@@ -4,7 +4,7 @@ from network.loss_functions import huber_loss, mse_loss , kl_loss
 from network.network import C3F2, C3F2_ActorCriticShared, C3F2_Actor, C3F2_Critic
 from numpy import linalg as LA
 #from tensorflow.python.keras._impl.keras.losses import kullback_leibler_divergence as kd
-from tensorflow.losses import KLDivergence as kld
+#from tensorflow.losses import KLDivergence as kld
 
 ###########################################################################
 # DeepPPO: Class
@@ -290,7 +290,7 @@ class initialize_network_DeepPPG():
             self.L_v = mse_loss(0.707*self.state_value, 0.707*self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            self.kl=kl_loss(self.pi, self.old_pi)
+            self.kl=kl_loss(self.pi, self.prob_old)
             
             #Ljoint
             self.loss_op = self.L_aux +tf.multiply(float(self.beta),self.kl)
@@ -491,7 +491,7 @@ class initialize_network_DeepPPG():
         predict_eval = self.pi
         predict_state = self.state_value
         L_v_eval=self.E_v_op
-        #print('for loop1')
+        print('for loop1')
         #optimize L
 
         _,L_a,L_o,L_kl, ProbActions = self.sess.run([joint_eval,self.L_aux,self.loss_op,self.kl , predict_eval],
@@ -501,7 +501,7 @@ class initialize_network_DeepPPG():
                                                         self.TD_target: TD_target,
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
-        print('for loop2')
+        
         #optimize L_v
         _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
@@ -511,11 +511,6 @@ class initialize_network_DeepPPG():
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
 
-        print(L_kl)
-        print(L_kl.shape)
-        print(self.pi)
-        print(self.old_pi)
-        print(self.pi.shape)
 
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):
