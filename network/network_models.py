@@ -293,13 +293,13 @@ class initialize_network_DeepPPG():
             self.kl=kl_loss(self.pi, self.prob_old)
             
             #Ljoint
-            self.loss_op = self.L_aux +tf.multiply(float(self.beta),self.kl)
+            self.L_joint = self.L_aux +tf.multiply(float(self.beta),self.kl)
             
             #OPTIMIZERS
             
             #PPO OP 
-            self.train_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
-                self.loss_op, name="train_main")
+            ###self.train_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
+            ###    self.loss_op, name="train_main")
             
             #Policy(E_pi) OP
             self.E_pi_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
@@ -418,6 +418,7 @@ class initialize_network_DeepPPG():
     def train_policy(self, xs, actions, TD_target, prob_old, GAE, lr, iter,E_pi,E_v):
         self.iter_policy += 1
         batch_size = xs.shape[0]
+        L_p=self.L_pi
         train_eval = self.train_op
         L_pi_eval=self.E_pi_op
         loss_eval = self.loss_op
@@ -428,7 +429,7 @@ class initialize_network_DeepPPG():
 
         #optimize L_pi
         for m in range(E_pi):
-            _,L_pi,L_clip,L_entrop, ProbActions = self.sess.run([L_pi_eval,self.L_pi,self.loss_actor_op,self.loss_entropy , predict_eval],
+            _,L_pi,L_clip,L_entrop, ProbActions = self.sess.run([L_pi_eval,L_p,self.loss_actor_op,self.loss_entropy , predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
@@ -491,10 +492,11 @@ class initialize_network_DeepPPG():
         predict_eval = self.pi
         predict_state = self.state_value
         L_v_eval=self.E_v_op
+        L_j=self.L_joint
         print('for loop1')
         #optimize L
 
-        _,L_a,L_o,L_kl, ProbActions = self.sess.run([joint_eval,self.L_aux,self.loss_op,self.kl , predict_eval],
+        _,L_a,L_jo,L_kl, ProbActions = self.sess.run([joint_eval,self.L_aux,L_j,self.kl , predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
