@@ -256,13 +256,13 @@ class initialize_network_DeepPPG():
             self.D_target = tf.placeholder(tf.float32, shape=[None, 1], name='D_target')
             # Select the deep network
 
-            self.model_pi = C3F2_Actor(self.X,cfg.num_actions,cfg.train_fc)
-            self.model_v = C3F2_Critic(self.X,cfg.num_actions,cfg.train_fc)
-            #self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc)
+            #self.model_pi = C3F2_Actor(self.X,cfg.num_actions,cfg.train_fc)
+            #self.model_v = C3F2_Critic(self.X,cfg.num_actions,cfg.train_fc)
+            self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc)
             ##can decouple actor and critic here based on models.
             ##get_state values feeds params to model.state_value which in turn calls c3f2 model and returns state value 
-            self.pi = self.model_pi.action_probs
-            self.state_value = self.model_v.state_value
+            self.pi = self.model.action_probs
+            self.state_value = self.model.state_value
 
             self.old_pi = self.pi
 
