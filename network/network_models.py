@@ -315,7 +315,7 @@ class initialize_network_DeepPPG():
             
             #L_joint OP
             self.E_joint_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
-                self.loss_op, name="train_main")
+                self.L_joint, name="train_main")
 
 
             self.sess = tf.InteractiveSession()
@@ -419,9 +419,7 @@ class initialize_network_DeepPPG():
         self.iter_policy += 1
         batch_size = xs.shape[0]
         L_p=self.L_pi
-        train_eval = self.train_op
         L_pi_eval=self.E_pi_op
-        loss_eval = self.loss_op
         predict_eval = self.pi
         predict_state = self.state_value
         L_v_eval=self.E_v_op
@@ -487,8 +485,7 @@ class initialize_network_DeepPPG():
         self.iter_policy += 1
         batch_size = xs.shape[0]
         joint_eval = self.E_joint_op
-        train_eval = self.train_op
-        loss_eval = self.loss_op
+        
         predict_eval = self.pi
         predict_state = self.state_value
         L_v_eval=self.E_v_op
