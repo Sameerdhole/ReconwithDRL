@@ -587,25 +587,26 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
     actions = np.zeros(shape=(episode_len, 1), dtype=int)
     td_targ = np.zeros(shape=(episode_len,1))
     p_a = np.zeros(shape=(episode_len,1))
-       
-    curr_states, actions, TD_target, p_a = buff
     
-    V_s = agent.network_model.get_state_value(curr_states)
-   
-#V_s_ = agent.network_model.get_state_value(next_states)
-#TD_target = rewards + gamma*V_s_* crashes
-    delta = TD_target - V_s
-    GAE_array = []
-    GAE=0
-    for delta_t in delta[::-1]:
-        GAE = gamma*lmbda* GAE + delta_t
-        GAE_array.append(GAE)
-    GAE_array.reverse()
-    GAE = np.array(GAE_array)
-    # Normalize the reward to reduce variance in training
-    GAE -= np.mean(GAE)
-    GAE /= (np.std(GAE) + 1e-8)
-    agent.network_model.train_aux(curr_states, actions, TD_target, p_a, GAE, lr)
+    for k in range(len(buff)):   
+        curr_states, actions, TD_target, p_a = buff[k]
+        
+        V_s = agent.network_model.get_state_value(curr_states)
+       
+        #V_s_ = agent.network_model.get_state_value(next_states)
+        #TD_target = rewards + gamma*V_s_* crashes
+        delta = TD_target - V_s
+        GAE_array = []
+        GAE=0
+        for delta_t in delta[::-1]:
+            GAE = gamma*lmbda* GAE + delta_t
+            GAE_array.append(GAE)
+        GAE_array.reverse()
+        GAE = np.array(GAE_array)
+        # Normalize the reward to reduce variance in training
+        GAE -= np.mean(GAE)
+        GAE /= (np.std(GAE) + 1e-8)
+        agent.network_model.train_aux(curr_states, actions, TD_target, p_a, GAE, lr)
 
 
 def get_errors(data_tuple, choose, ReplayMemory, input_size, agent, target_agent, gamma, Q_clip):

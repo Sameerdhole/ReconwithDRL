@@ -338,8 +338,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                     cv2.waitKey(1)
                                     ##Append to buffer##
                                     
-                                for mini in range(len(buff)):
-                                    global_buffer.append(buff[mini])
+                                global_buffer.append(buff)
                                 if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
                                     
                                     automate = False
