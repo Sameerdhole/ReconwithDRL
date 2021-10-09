@@ -146,10 +146,7 @@ class initialize_network_DeepPPO():
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
         
-        print("Total loss:", loss)
-        print("Loss critic:", loss_critic)
-        print("Loss actor:", loss_actor)
-        print("Loss entropy:", loss_entropy)
+       
         #B.append(state_value)
         #b.append(td_target)
 
@@ -293,10 +290,10 @@ class initialize_network_DeepPPG():
             self.L_v = 0.5*mse_loss(self.state_value, self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            self.kl=kl_loss(self.pi, self.prob_old)
+            #self.kl=kl_loss(self.pi, self.prob_old)
             
             #Ljoint
-            self.L_joint = self.L_aux +self.beta*self.kl
+            self.L_joint = self.L_aux + self.L_pi
             
             #OPTIMIZERS
             
@@ -313,8 +310,8 @@ class initialize_network_DeepPPG():
                 self.L_v, name="train_main")
 
             #Value(E_aux) OP
-            self.E_aux_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
-                self.L_aux, name="train_main")
+            #self.E_aux_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
+                #self.L_aux, name="train_main")
             
             #L_joint OP
             self.E_joint_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
@@ -329,6 +326,9 @@ class initialize_network_DeepPPG():
 
             self.sess.graph.finalize()
 
+        if cfg.custom_load:
+            print('Loading weights from: ', cfg.custom_load_path)
+            self.load_network(cfg.custom_load_path)
 
 
     def get_vars(self):
@@ -447,9 +447,7 @@ class initialize_network_DeepPPG():
                                                         self.TD_target: TD_target,
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
-        print("policy loss:", L_pi)
-        print("entropyloss:", L_entrop)
-        print("clip loss:", L_clip)
+      
 
         # Log to tensorboard
         self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(L_pi) / batch_size,
@@ -486,27 +484,29 @@ class initialize_network_DeepPPG():
         ##feeddict to optimize l joint
         ##Optimize L joint wrt theta_pi and theta_v
         #print(" inside network_model train_aux")
+        #optimize L
 
         self.iter_policy += 1
         batch_size = xs.shape[0]
-        joint_eval = self.E_joint_op
-        
+        L_p=self.L_pi
+        L_pi_eval=self.E_pi_op
         predict_eval = self.pi
         predict_state = self.state_value
         L_v_eval=self.E_v_op
-        L_j=self.L_joint
-        
-        #optimize L
 
-        _,L_a,L_jo,L_kl, ProbActions = self.sess.run([joint_eval,self.L_aux,L_j,self.kl , predict_eval],
+
+        #optimize L_pi
+        
+        _,L_pi,L_clip,L_entrop, ProbActions = self.sess.run([L_pi_eval,L_p,self.loss_actor_op,self.loss_entropy , predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
                                                         self.TD_target: TD_target,
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
-        
+
         #optimize L_v
+        
         _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
@@ -515,10 +515,9 @@ class initialize_network_DeepPPG():
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
 
-        print("auxilary phase")
-        print("joint loss:", L_jo)
-        print("KL:", L_kl)
-        print("value loss:", L_v)
+        print("AUX loss 1:", L_pi)
+        print("AUX loss 2:", L_entrop)
+        print("AUX loss 3:", L_clip)
 
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):
