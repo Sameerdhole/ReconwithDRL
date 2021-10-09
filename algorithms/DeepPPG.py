@@ -146,6 +146,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                                                        env_folder, cfg, algorithm_cfg)
             global_buffer = []
             while phases:
+                print("##########Entering Training phase#########")
                 while automate:
                     buff = []
                     if cfg.mode == 'train':
@@ -342,7 +343,8 @@ def DeepPPG(cfg, env_process, env_folder):
                                 if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
                                     
                                     automate = False
-
+                                    print("##########Entering Aux phase##########")
+                                    print("Collected episodes:", len(global_buffer))
                                 iter[name_agent]+=1
                     # if iter % algorithm_cfg.communication_interval == 0:
                     #     print('Communicating the weights and averaging them')
@@ -417,6 +419,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                         algorithm_cfg.gamma, epi_num[name_agent],global_buffer[j], name_agent)
                      
                     automate = True
+                    print("##########End of Aux phase##########")
                     phase_count+=1
                     global_buffer= []
 
