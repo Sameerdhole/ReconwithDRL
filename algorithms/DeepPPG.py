@@ -10,6 +10,7 @@ from util.transformations import euler_from_quaternion
 from configs.read_cfg import read_cfg, update_algorithm_cfg
 import numpy as np
 import traceback
+from network.obj_detect import oject_detection
 
 
 def DeepPPG(cfg, env_process, env_folder):
@@ -352,6 +353,7 @@ def DeepPPG(cfg, env_process, env_folder):
 
                     # iter += 1
                     elif cfg.mode == 'infer':
+                        object_detection()
                         # Inference phase
                         agent_state = agent[name_agent].GetAgentState()
                         if agent_state.has_collided:
