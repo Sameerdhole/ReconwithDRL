@@ -3,6 +3,7 @@ import numpy as np
 from network.loss_functions import huber_loss, mse_loss , kl_loss
 from network.network import C3F2, C3F2_ActorCriticShared, C3F2_Actor, C3F2_Critic
 from numpy import linalg as LA
+from network.yoloclass import YOLO
 #from tensorflow.python.keras._impl.keras.losses import kullback_leibler_divergence as kd
 #from tensorflow.losses import KLDivergence as kld
 
@@ -235,6 +236,8 @@ class initialize_network_DeepPPG():
             self.eps_clip = cfg.eps_clip
             self.beta=cfg.beta
             self.beta_s=cfg.beta_s
+            ###YOLO class###
+            self.my_yolo = YOLO()
 
             # Placeholders
             self.batch_size = tf.placeholder(tf.int32, shape=())
@@ -365,6 +368,8 @@ class initialize_network_DeepPPG():
                                         self.prob_old: prob_old,
                                         self.GAE: GAE})
 
+    def detect_image(self,img):
+        return self.my_yolo.detect_image(img)
 
     def get_state_value(self, xs):
         lr = 0

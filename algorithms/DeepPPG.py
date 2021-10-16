@@ -396,6 +396,8 @@ def DeepPPG(cfg, env_process, env_folder):
                             fig_z.canvas.flush_events()
 
                             current_state[name_agent] = agent[name_agent].get_state()
+                            img=get_imgfrod(self.client, self.vehicle_name)
+                            cv2.imshow("result", img)
                             action,p_a ,action_type = policy_PPG(current_state[name_agent], agent[name_agent])
                             action_word = translate_action(action, algorithm_cfg.num_actions)
                             # Take continuous action
