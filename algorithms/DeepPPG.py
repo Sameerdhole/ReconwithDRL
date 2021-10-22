@@ -353,7 +353,6 @@ def DeepPPG(cfg, env_process, env_folder):
 
                     # iter += 1
                     elif cfg.mode == 'infer':
-                        object_detection()
                         # Inference phase
                         agent_state = agent[name_agent].GetAgentState()
                         if agent_state.has_collided:
@@ -396,7 +395,7 @@ def DeepPPG(cfg, env_process, env_folder):
                             fig_z.canvas.flush_events()
 
                             current_state[name_agent] = agent[name_agent].get_state()
-                            img=get_imgfrod(self.client, self.vehicle_name)
+                            img=agent[name_agent].get_imgfrod(agent[name_agent])
                             cv2.imshow("result", img)
                             action,p_a ,action_type = policy_PPG(current_state[name_agent], agent[name_agent])
                             action_word = translate_action(action, algorithm_cfg.num_actions)
@@ -421,7 +420,9 @@ def DeepPPG(cfg, env_process, env_folder):
                             
                             train_AUX(algorithm_cfg, agent_this_drone,algorithm_cfg.learning_rate, algorithm_cfg.input_size,
                                         algorithm_cfg.gamma, epi_num[name_agent],global_buffer[j], name_agent)
-                     
+
+
+                    epi_num[name_agent]+=1 
                     automate = True
                     print("##########End of Aux phase##########")
                     phase_count+=1
