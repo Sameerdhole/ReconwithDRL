@@ -9,16 +9,16 @@ from keras.models import load_model
 from keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
 
-from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
-from yolo3.utils import letterbox_image
+from Yolo.yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
+from Yolo.yolo3.utils import letterbox_image
 from keras.utils import multi_gpu_model
 import threading, logging
 
 class YOLO():   
     _defaults = {       
-        "model_path": 'model_data/trained_weights_final_009.h5',        
-        "anchors_path": 'model_data/yolo_anchors_009.txt',
-        "classes_path": 'model_data/voc_classes.txt',
+        "model_path": 'Yolo/model_data/tiny_yolo_weights.h5',        
+        "anchors_path": 'Yolo/model_data/tiny_yolo_anchors.txt',
+        "classes_path": 'Yolo/model_data/coco_classes.txt',
         "score" : 0.3,
         "iou" : 0.45,
         "model_image_size" : (672, 672), # factor 32*21

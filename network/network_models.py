@@ -520,9 +520,7 @@ class initialize_network_DeepPPG():
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
 
-        print("AUX loss 1:", L_pi)
-        print("AUX loss 2:", L_entrop)
-        print("AUX loss 3:", L_clip)
+       
 
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):
