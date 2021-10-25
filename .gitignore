@@ -8,3 +8,4 @@ pretrained_weights/
 unreal_envs/*
 scratch.py
 object_detection/
+Yolo/

@@ -13,6 +13,7 @@ import cv2
 from skimage.util import random_noise
 
 
+
 ##############################################################################################################
 #GENERAL FUNCTIONS
 ##############################################################################################################
@@ -257,6 +258,19 @@ def reset_to_initial(level, reset_array, client, vehicle_name):
     client.simSetVehiclePose(reset_pos, ignore_collison=True, vehicle_name=vehicle_name)
     time.sleep(0.1)
 
+def get_img(client,vehicle_name):
+    responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.DepthPlanner,
+    pixels_as_float=True, compress=False),
+    airsim.ImageRequest("1", airsim.ImageType.Scene, False, False)])
+    color = responses[1]
+    imgcolor = np.fromstring(color.image_data_uint8, dtype=np.uint8)
+    imgcolor = imgcolor.reshape(responses[1].height, responses[1].width, -1)
+    if imgcolor.shape[2] == 4:
+        imgcolor = cv2.cvtColor(imgcolor,cv2.COLOR_RGBA2BGR)
+    image = Image.fromarray(imgcolor)
+    
+
+    return image
 def get_MonocularImageRGB(client, vehicle_name):
     responses1 = client.simGetImages([
         airsim.ImageRequest('front_center', airsim.ImageType.Scene, False,
@@ -272,20 +286,7 @@ def get_MonocularImageRGB(client, vehicle_name):
 
     return camera_image
 
-def get_imgfrod(client,vehicle_name):
-    responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.DepthPlanner,
-    pixels_as_float=True, compress=False),
-    airsim.ImageRequest("1", airsim.ImageType.Scene, False, False)])
-    color = responses[1]
-    imgcolor = np.fromstring(color.image_data_uint8, dtype=np.uint8)
-    imgcolor = imgcolor.reshape(responses[1].height, responses[1].width, -1)
-    if imgcolor.shape[2] == 4:
-        imgcolor = cv2.cvtColor(imgcolor,cv2.COLOR_RGBA2BGR)
-    image = Image.fromarray(imgcolor)
-    image = agent.network_model.detect_image(image)
-    result = np.asarray(image)
 
-    return result
 
 def get_StereoImageRGB(client, vehicle_name):
     camera_image = []
