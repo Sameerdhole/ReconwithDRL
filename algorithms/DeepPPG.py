@@ -112,6 +112,7 @@ def DeepPPG(cfg, env_process, env_folder):
     distance_array = {}
     epi_env_array = {}
     log_files = {}
+    max_return=-1
 
 
     # If the phase is inference force the num_agents to 1
@@ -265,11 +266,17 @@ def DeepPPG(cfg, env_process, env_folder):
                                         #                                                   index=epi_num[name_agent])
 
                                         # Train episode
-                                        buff=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
-                                                            algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                                            algorithm_cfg.gamma, epi_num[name_agent],name_agent)
-                                        
-
+                                        if(ret[name_agent]>max_return):
+                                            buff=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                                                algorithm_cfg.learning_rate, algorithm_cfg.input_size,
+                                                                algorithm_cfg.gamma, epi_num[name_agent],name_agent,ret[name_agent],max_return)
+                                            
+                                            global_buffer.append(buff)
+                                            max_return=ret[name_agent]
+                                        else:
+                                            train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                                                algorithm_cfg.learning_rate, algorithm_cfg.input_size,
+                                                                algorithm_cfg.gamma, epi_num[name_agent],name_agent,ret[name_agent],max_return)
                                         
                                         #compute and store current policy for all states in  buffer B
 
@@ -340,7 +347,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                     cv2.waitKey(1)
                                     ##Append to buffer##
                                     
-                                global_buffer.append(buff)
+
                                 if epi_num[name_agent] % algorithm_cfg.total_episodes == 0:
                                     
                                     automate = False

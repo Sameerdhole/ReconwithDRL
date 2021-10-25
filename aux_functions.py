@@ -518,9 +518,8 @@ def policy_PPG(curr_state, agent):
     action_type = 'Prob'
     return action[0], p_a, action_type
 
-def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num,name_agent):
-    
-    buff= []
+def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num,name_agent,ret,max_ret):
+
     E_pi=algorithm_cfg.E_pi
     E_v=algorithm_cfg.E_v
     batch_size = algorithm_cfg.policy_batch_size
@@ -568,12 +567,16 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
         GAE /= (np.std(GAE) + 1e-8)
         # TODO: zero mean unit std GAE
         #p_a=prob_actions(curr_states)
-        buff.append([curr_states, actions, TD_target,p_a])
+        
         
         
         agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)       
-        ##add buffer and return and append  to main buffer
-    return buff
+        if(ret>max_ret):
+            buff= []
+            buff.append([curr_states, actions, TD_target,p_a])
+            ##add buffer and return and append  to main buffer
+            return buff
+        
             
 def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_agent):
     ###minibatches 
