@@ -21,7 +21,7 @@ class YOLO():
         "classes_path": 'model_data/voc_classes.txt',
         "score" : 0.3,
         "iou" : 0.45,
-        "model_image_size" : (672, 672), # factor 32*21
+        "model_image_size" : (672, 672), # fa.tor 32*21
         #"model_image_size" : (416, 416),# factor 32*13
         "gpu_num" : 1,
     }
