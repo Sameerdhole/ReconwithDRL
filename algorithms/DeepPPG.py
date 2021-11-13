@@ -10,7 +10,7 @@ from util.transformations import euler_from_quaternion
 from configs.read_cfg import read_cfg, update_algorithm_cfg
 import numpy as np
 import traceback
-
+from Yolo.yolo import YOLO
 
 
 def DeepPPG(cfg, env_process, env_folder):
@@ -47,6 +47,8 @@ def DeepPPG(cfg, env_process, env_folder):
 
     agent = {}
     epi_num = {}
+
+
     if cfg.mode == 'train':
         iter = {}
         #wait_for_others = {}
@@ -70,6 +72,9 @@ def DeepPPG(cfg, env_process, env_folder):
 
     elif cfg.mode == 'infer':
         iter = 1
+        my_yolo = YOLO()
+        def detect_image(self,img):
+            return self.my_yolo.detect_image(img)
         name_agent = 'drone0'
         name_agent_list.append(name_agent)
         agent[name_agent] = PedraAgent(algorithm_cfg, client, name=name_agent + 'DQN', vehicle_name=name_agent)
@@ -266,18 +271,15 @@ def DeepPPG(cfg, env_process, env_folder):
                                         #                                                   index=epi_num[name_agent])
 
                                         # Train episode
-                                        if(ret[name_agent]>max_return):
-                                            buff=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
-                                                                algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                                                algorithm_cfg.gamma, epi_num[name_agent],name_agent,ret[name_agent],max_return)
-                                            
-                                            global_buffer.append(buff)
-                                            max_return=ret[name_agent]
-                                        else:
-                                            train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
-                                                                algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                                                algorithm_cfg.gamma, epi_num[name_agent],name_agent,ret[name_agent],max_return)
                                         
+                                        buff=train_PPG(data_tuple[name_agent], algorithm_cfg, agent_this_drone,
+                                                                algorithm_cfg.learning_rate, algorithm_cfg.input_size,
+                                                                algorithm_cfg.gamma, epi_num[name_agent],name_agent)
+                                            
+                                        global_buffer.append(buff)
+                                            
+                                            
+                                            
                                         #compute and store current policy for all states in  buffer B
 
                                         c = agent_this_drone.network_model.get_vars()[15][0]
@@ -403,7 +405,16 @@ def DeepPPG(cfg, env_process, env_folder):
 
                             current_state[name_agent] = agent[name_agent].get_state()
                             img=agent[name_agent].get_imgfrod(agent[name_agent])
-                            cv2.imshow("result", img)
+
+
+
+                            result = my_yolo.detect_image(img)
+                            
+                            result = np.asarray(result)
+
+                            result = image_resize(result)
+
+                            cv2.imshow("result", result)
                             action,p_a ,action_type = policy_PPG(current_state[name_agent], agent[name_agent])
                             action_word = translate_action(action, algorithm_cfg.num_actions)
                             # Take continuous action
@@ -419,16 +430,14 @@ def DeepPPG(cfg, env_process, env_folder):
 
                             print(s_log)
                             log_files[name_agent].write(s_log + '\n')
-                while(not automate):
-                    
+
+                while(not automate and cfg.mode == 'train'):
                     
                     for i in range(algorithm_cfg.E_aux):
                         for j in range(len(global_buffer)):
-                            
                             train_AUX(algorithm_cfg, agent_this_drone,algorithm_cfg.learning_rate, algorithm_cfg.input_size,
-                                        algorithm_cfg.gamma, epi_num[name_agent],global_buffer[j], name_agent)
-
-
+                                            algorithm_cfg.gamma, epi_num[name_agent],global_buffer[j], name_agent)
+                                    
                     epi_num[name_agent]+=1 
                     automate = True
                     print("##########End of Aux phase##########")

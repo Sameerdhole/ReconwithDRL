@@ -508,6 +508,39 @@ def blit_text(surface, text, pos, font, color=pygame.Color('black')):
         x = pos[0]  # Reset the x.
         y += word_height  # Start on new row.
 
+
+def image_resize(image, width = 800, height = 600, inter = cv2.INTER_AREA):
+    # initialize the dimensions of the image to be resized and
+    # grab the image size
+    dim = None
+    (h, w) = image.shape[:2]
+
+    # if both the width and height are None, then return the
+    # original image
+    if width is None and height is None:
+        return image
+
+    # check to see if the width is None
+    if width is None:
+        # calculate the ratio of the height and construct the
+        # dimensions
+        r = height / float(h)
+        dim = (int(w * r), height)
+
+    # otherwise, the height is None
+    else:
+        # calculate the ratio of the width and construct the
+        # dimensions
+        r = width / float(w)
+        dim = (width, int(h * r))
+
+    # resize the image
+    resized = cv2.resize(image, dim, interpolation = inter)
+
+    # return the resized image
+    return resized
+
+
 ##########################################################################################################
 #PPG fUNCTIONS
 ##########################################################################################################
@@ -518,7 +551,7 @@ def policy_PPG(curr_state, agent):
     action_type = 'Prob'
     return action[0], p_a, action_type
 
-def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num,name_agent,ret,max_ret):
+def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi_num,name_agent):
 
     E_pi=algorithm_cfg.E_pi
     E_v=algorithm_cfg.E_v
@@ -568,14 +601,12 @@ def train_PPG(data_tuple_total, algorithm_cfg, agent, lr, input_size, gamma, epi
         # TODO: zero mean unit std GAE
         #p_a=prob_actions(curr_states)
         
-        
-        
-        agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)       
-        if(ret>max_ret):
-            buff= []
-            buff.append([curr_states, actions, TD_target,p_a])
-            ##add buffer and return and append  to main buffer
-            return buff
+        buff= []
+        buff.append([curr_states, actions, TD_target,p_a]) 
+        agent.network_model.train_policy(curr_states, actions, TD_target, p_a, GAE, lr, epi_num,E_pi,E_v)
+
+       
+        return buff
         
             
 def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_agent):
