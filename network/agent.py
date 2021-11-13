@@ -127,9 +127,8 @@ class PedraAgent():
     def get_imgfrod(self,agent):
         print("inside get_imgfrod")
         response=get_img(self.client, self.vehicle_name)
-        image = agent.network_model.detect_image(response)
-        result = np.asarray(image)
-        return result
+        
+        return response
 
     def get_state(self):
 

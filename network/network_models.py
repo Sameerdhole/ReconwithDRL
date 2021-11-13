@@ -3,7 +3,7 @@ import numpy as np
 from network.loss_functions import huber_loss, mse_loss , kl_loss
 from network.network import C3F2, C3F2_ActorCriticShared, C3F2_Actor, C3F2_Critic
 from numpy import linalg as LA
-from network.yoloclass import YOLO
+from Yolo.yolo import YOLO
 #from tensorflow.python.keras._impl.keras.losses import kullback_leibler_divergence as kd
 #from tensorflow.losses import KLDivergence as kld
 
@@ -237,7 +237,7 @@ class initialize_network_DeepPPG():
             self.beta=cfg.beta
             self.beta_s=cfg.beta_s
             ###YOLO class###
-            self.my_yolo = YOLO()
+            
 
             # Placeholders
             self.batch_size = tf.placeholder(tf.int32, shape=())
@@ -293,10 +293,10 @@ class initialize_network_DeepPPG():
             self.L_v = 0.5*mse_loss(self.state_value, self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            #self.kl=kl_loss(self.pi, self.prob_old)
+            self.kl=kl_loss(self.pi, self.prob_old)
             
             #Ljoint
-            self.L_joint = self.L_aux + self.L_pi
+            self.L_joint = self.L_aux + self.loss_actor_op
             
             #OPTIMIZERS
             
@@ -368,8 +368,6 @@ class initialize_network_DeepPPG():
                                         self.prob_old: prob_old,
                                         self.GAE: GAE})
 
-    def detect_image(self,img):
-        return self.my_yolo.detect_image(img)
 
     def get_state_value(self, xs):
         lr = 0
@@ -493,8 +491,8 @@ class initialize_network_DeepPPG():
 
         self.iter_policy += 1
         batch_size = xs.shape[0]
-        L_p=self.L_pi
-        L_pi_eval=self.E_pi_op
+        L_j=self.L_joint
+        L_j_eval=self.E_joint_op
         predict_eval = self.pi
         predict_state = self.state_value
         L_v_eval=self.E_v_op
@@ -502,17 +500,17 @@ class initialize_network_DeepPPG():
 
         #optimize L_pi
         
-        _,L_pi,L_clip,L_entrop, ProbActions = self.sess.run([L_pi_eval,L_p,self.loss_actor_op,self.loss_entropy , predict_eval],
+        _,L_jo,L_a,L_clip, ProbActions = self.sess.run([L_j_eval,L_j,self.L_aux,self.loss_actor_op, predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
                                                         self.TD_target: TD_target,
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
-
+        
         #optimize L_v
         
-        _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
+        _,L_v, state_value = self.sess.run([L_v_eval,self.L_v, predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
