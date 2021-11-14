@@ -9,3 +9,6 @@ unreal_envs/*
 scratch.py
 object_detection/
 Yolo/
+mapping/project.avi
+mapping/dataset
+
