@@ -404,7 +404,10 @@ def DeepPPG(cfg, env_process, env_folder):
                             fig_z.canvas.flush_events()
 
                             current_state[name_agent] = agent[name_agent].get_state()
-                            img=agent[name_agent].get_imgfrod(agent[name_agent])
+
+############################################Object detection########################################################
+
+                            '''img=agent[name_agent].get_imgfrod(agent[name_agent])
 
 
 
@@ -414,7 +417,9 @@ def DeepPPG(cfg, env_process, env_folder):
 
                             result = image_resize(result)
 
-                            cv2.imshow("result", result)
+                            cv2.imshow("result", result)'''
+
+################################################################################################################
                             action,p_a ,action_type = policy_PPG(current_state[name_agent], agent[name_agent])
                             action_word = translate_action(action, algorithm_cfg.num_actions)
                             # Take continuous action
