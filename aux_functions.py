@@ -268,9 +268,13 @@ def get_img(client,vehicle_name):
     if imgcolor.shape[2] == 4:
         imgcolor = cv2.cvtColor(imgcolor,cv2.COLOR_RGBA2BGR)
     image = Image.fromarray(imgcolor)
-    
-
     return image
+
+
+ def get_imu(client,vehicle_name):
+    imudata = client.getImuData("", vehicle_name)
+    return imudata
+       
 def get_MonocularImageRGB(client, vehicle_name):
     responses1 = client.simGetImages([
         airsim.ImageRequest('front_center', airsim.ImageType.Scene, False,

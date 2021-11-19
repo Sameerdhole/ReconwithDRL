@@ -47,30 +47,23 @@ def CreateVideoimages(videopath, imagefolder,orb):
         written = cv2.imwrite(imagename , frame)
         if not written:
             print("Writing frame number " + str(frame_id) + " failed")
-    if orb:
-
+        if orb:
      #write new line in rgb.txt
-        textfile.write(str(timestamp/1000) + " rgb/frame{0}.jpg\n".format(frame_id))
-        cv2.imshow('img',frame) #show the prossesed frame
-        cv2.waitKey(1)
+            textfile.write(str(timestamp/1000) + " rgb/frame{0}.jpg\n".format(frame_id))
+            cv2.imshow('img',frame) #show the prossesed frame
+            cv2.waitKey(1)
     #All frames have been prossesed
     print("Done creating images, closing up...")
     cv2.destroyAllWindows() #close the window
     cap.release()   #close the capture video
     if orb: #close the text file
         textfile.close()
-    if len(sys.argv) == 3: #if the user has provided enough arguments
+    
+def helper(videopath, imagefolder,val):
+    if val=="orb-slam2": # It has to be set up for ORB-SLAM2
         #extract the arguments
-        videopath = sys.argv[1]
-        imagefolder = sys.argv[2]
-        #run the CreateVideoBag function
-        CreateVideoimages(videopath, imagefolder, False)
-        #voila
-        print("Done")
-    elif len(sys.argv) == 4 and sys.argv[3] == "orb-slam2": # It has to be set up for ORB-SLAM2
-        #extract the arguments
-        videopath = sys.argv[1]
-        imagefolder = sys.argv[2] + "/rgb"
+        videopath = videopath
+        imagefolder = imagefolder + "/rgb"
         #run the CreateVideoBag function
         CreateVideoimages(videopath, imagefolder, True)
         #voila
@@ -79,4 +72,4 @@ def CreateVideoimages(videopath, imagefolder,orb):
         #The user has not priveded the right amount of arguments, point to this
         print("Please supply two arguments as following: Videotofiles.py videopath imagefolder [orb-slam2] \n When adding \"orb-slam2\", the nessary text file will also be created.")
 
-CreateVideoimages('C:/Users/prani/Desktop/ReconwithDRL/mapping/project.avi', 'C:Users/prani/Desktop/ReconwithDRL/mapping/dataset')    
+helper('/home/sameer/Downloads/project.avi', '/home/sameer/Downloads/dataset',"orb-slam2")    

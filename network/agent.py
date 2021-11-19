@@ -125,10 +125,14 @@ class PedraAgent():
         return depth, thresh
     
     def get_imgfrod(self,agent):
-        print("inside get_imgfrod")
         response=get_img(self.client, self.vehicle_name)
         
         return response
+
+    def get_imudata(self,agent):
+        imudata=get_imu(self.client, self.vehicle_name)
+        
+        return imudata
 
     def get_state(self):
 

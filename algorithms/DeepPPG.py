@@ -10,8 +10,10 @@ from util.transformations import euler_from_quaternion
 from configs.read_cfg import read_cfg, update_algorithm_cfg
 import numpy as np
 import traceback
+import time, sys, os
+from cv_bridge import CvBridge
 from Yolo.yolo import YOLO
-
+from datetime import datetime
 
 def DeepPPG(cfg, env_process, env_folder):
     algorithm_cfg = read_cfg(config_filename='configs/DeepPPG.cfg', verbose=True)
@@ -73,6 +75,14 @@ def DeepPPG(cfg, env_process, env_folder):
     elif cfg.mode == 'infer':
         iter = 1
         my_yolo = YOLO()
+        
+        #MAPPING PARAMS
+        imagefolder = imagefolder + "/rgb"
+        frame_id = 0
+        imutxtloc = imagefolder[:-3] + "/imudata.txt"
+        imutextfile = open(imutxtloc,'w')
+        imutextfile.write("#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]")
+
         def detect_image(self,img):
             return self.my_yolo.detect_image(img)
         name_agent = 'drone0'
@@ -420,6 +430,35 @@ def DeepPPG(cfg, env_process, env_folder):
                             cv2.imshow("result", result)'''
 
 ################################################################################################################
+############################################ Mapping ############################################################
+                            ##3 writers 1)Images 2)Timestamp 3)imu data in tum format
+                            img=agent[name_agent].get_imgfrod(agent[name_agent])
+                            imudata=agent[name_agent].get_imudata(agent[name_agent])
+                            #start a Window to show the prossesed images in
+                            #cv2.startWindowThread()
+                            #cv2.namedWindow('img', cv2.WINDOW_NORMAL)
+                            #create the imagefolder if it doesnt exists
+                            if not os.path.exists(imagefolder):
+                                os.makedirs(imagefolder)
+                            #If nessesary, open the rgb.txt file for Writing
+                            timestamptxtloc = imagefolder[:-3] + "/timestamp.txt"
+                            imutxtloc = imagefolder[:-3] + "/imudata.txt"
+                            timestamptextfile = open(timestamptxtloc,'w')
+                            imutextfile = open(imutxtloc,'w')
+                            #newframeavailable = True #boolean if there are new frames available
+                            timestamp = datetime.now().time() #get the current timestamp
+                            frame_id += 1 #create a new frame id
+                            imagename = imagefolder + "/frame{0}.jpg".format(frame_id)
+                            written = cv2.imwrite(imagename , img)
+                            if not written:
+                                print("Writing frame number " + str(frame_id) + " failed")
+                            timestamptextfile.write(str(timestamp))
+                            imutextfile.write(str(timestamp)+","+imudata[1][0]+","+imudata[1][1]+","+imudata[1][2]+","+imudata[2][0]+","+imudata[2][1]+","+imudata[2][2] )
+                            timestamptextfile.close()
+                            imutextfile.close()
+
+
+####################################################################################################################
                             action,p_a ,action_type = policy_PPG(current_state[name_agent], agent[name_agent])
                             action_word = translate_action(action, algorithm_cfg.num_actions)
                             # Take continuous action
