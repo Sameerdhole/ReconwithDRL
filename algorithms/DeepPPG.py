@@ -13,7 +13,7 @@ import traceback
 import time, sys, os
 from Yolo.yolo import YOLO
 from datetime import datetime
-from mapping.point_cloud import point
+
 
 def DeepPPG(cfg, env_process, env_folder):
     algorithm_cfg = read_cfg(config_filename='configs/DeepPPG.cfg', verbose=True)
