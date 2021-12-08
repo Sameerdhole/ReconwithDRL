@@ -11,9 +11,9 @@ from configs.read_cfg import read_cfg, update_algorithm_cfg
 import numpy as np
 import traceback
 import time, sys, os
-from cv_bridge import CvBridge
 from Yolo.yolo import YOLO
 from datetime import datetime
+from mapping.point_cloud import point
 
 def DeepPPG(cfg, env_process, env_folder):
     algorithm_cfg = read_cfg(config_filename='configs/DeepPPG.cfg', verbose=True)
@@ -77,12 +77,18 @@ def DeepPPG(cfg, env_process, env_folder):
         my_yolo = YOLO()
         
         #MAPPING PARAMS
+        '''imagefolder = "C:/Users/prani/Desktop/ReconwithDRL/mapping/dataset"
         imagefolder = imagefolder + "/rgb"
+        if not os.path.exists(imagefolder):
+            os.makedirs(imagefolder)
+
         frame_id = 0
         imutxtloc = imagefolder[:-3] + "/imudata.txt"
+        timestamptxtloc = imagefolder[:-3] + "/timestamp.txt"
         imutextfile = open(imutxtloc,'w')
-        imutextfile.write("#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]")
-
+        imutextfile.write("#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\n")
+        timestamptextfile = open(timestamptxtloc,'w')'''
+        
         def detect_image(self,img):
             return self.my_yolo.detect_image(img)
         name_agent = 'drone0'
@@ -416,7 +422,7 @@ def DeepPPG(cfg, env_process, env_folder):
                             current_state[name_agent] = agent[name_agent].get_state()
 
 ############################################Object detection########################################################
-
+                        
                             '''img=agent[name_agent].get_imgfrod(agent[name_agent])
 
 
@@ -432,30 +438,41 @@ def DeepPPG(cfg, env_process, env_folder):
 ################################################################################################################
 ############################################ Mapping ############################################################
                             ##3 writers 1)Images 2)Timestamp 3)imu data in tum format
-                            img=agent[name_agent].get_imgfrod(agent[name_agent])
+                            '''img=agent[name_agent].get_imgfrod(agent[name_agent])
                             imudata=agent[name_agent].get_imudata(agent[name_agent])
+                            timestamp = getattr(imudata,'time_stamp')
+                            angular_velocity = getattr(imudata,'angular_velocity')
+                            angular_velocity = angular_velocity.to_numpy_array()
+                            linear_acceleration = getattr(imudata,'linear_acceleration')
+                            linear_acceleration = linear_acceleration.to_numpy_array()'''
+
+                            
+                            
+
                             #start a Window to show the prossesed images in
                             #cv2.startWindowThread()
                             #cv2.namedWindow('img', cv2.WINDOW_NORMAL)
                             #create the imagefolder if it doesnt exists
-                            if not os.path.exists(imagefolder):
-                                os.makedirs(imagefolder)
+                            
                             #If nessesary, open the rgb.txt file for Writing
-                            timestamptxtloc = imagefolder[:-3] + "/timestamp.txt"
-                            imutxtloc = imagefolder[:-3] + "/imudata.txt"
-                            timestamptextfile = open(timestamptxtloc,'w')
-                            imutextfile = open(imutxtloc,'w')
+                            
+                            #imutxtloc = imagefolder[:-3] + "/imudata.txt"
+                            
                             #newframeavailable = True #boolean if there are new frames available
-                            timestamp = datetime.now().time() #get the current timestamp
-                            frame_id += 1 #create a new frame id
-                            imagename = imagefolder + "/frame{0}.jpg".format(frame_id)
+                            #timestamp = datetime.now().time() #get the current timestamp
+                            '''frame_id += 1 #create a new frame id'''
+                            '''imagename = imagefolder + "/"+str(timestamp)+".png"
+                            img = np.array(img)
                             written = cv2.imwrite(imagename , img)
                             if not written:
-                                print("Writing frame number " + str(frame_id) + " failed")
-                            timestamptextfile.write(str(timestamp))
-                            imutextfile.write(str(timestamp)+","+imudata[1][0]+","+imudata[1][1]+","+imudata[1][2]+","+imudata[2][0]+","+imudata[2][1]+","+imudata[2][2] )
-                            timestamptextfile.close()
-                            imutextfile.close()
+                                print("Writing frame number " + str(frame_id) + " failed")'''
+                            #point(client)
+                            #def to_numpy_array(self):
+                            #    return np.array([self.x_val, self.y_val, self.z_val], dtype=np.float32)
+                            '''timestamptextfile.write("{0}\n".format(timestamp))
+                            #imutextfile.write(str(timestamp)+","+str(angular_velocity[0])+","+str(angular_velocity[1])+","+str(angular_velocity[2])+","+str(linear_acceleration[0])+","+str(linear_acceleration[1])+","+str(linear_acceleration[2])+"\n")
+                            imutextfile.write("{0},{0},{0},{0},{0},{0},{0}\n".format(timestamp, angular_velocity[0], angular_velocity[1], angular_velocity[2], linear_acceleration[0], linear_acceleration[1], linear_acceleration[2]))
+                            '''
 
 
 ####################################################################################################################
@@ -509,3 +526,7 @@ def DeepPPG(cfg, env_process, env_folder):
                 print(exc_obj)
                 automate = False
                 print('Hit r and then backspace to start from this point')
+
+        '''if cfg.mode == 'infer':
+            timestamptextfile.close()
+            imutextfile.close()'''

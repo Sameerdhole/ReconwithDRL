@@ -271,7 +271,7 @@ def get_img(client,vehicle_name):
     return image
 
 
- def get_imu(client,vehicle_name):
+def get_imu(client,vehicle_name):
     imudata = client.getImuData("", vehicle_name)
     return imudata
        
