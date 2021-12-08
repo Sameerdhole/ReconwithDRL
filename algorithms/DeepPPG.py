@@ -459,7 +459,7 @@ def DeepPPG(cfg, env_process, env_folder):
                             #newframeavailable = True #boolean if there are new frames available
                             #timestamp = datetime.now().time() #get the current timestamp
                             '''frame_id += 1 #create a new frame id'''
-                            imagename = imagefolder + "/"+str(timestamp)+".png"
+                            imagename = imagefolder + "/{0}.png\n".format(timestamp)
                             img = np.array(img)
                             written = cv2.imwrite(imagename , img)
                             if not written:
@@ -505,7 +505,6 @@ def DeepPPG(cfg, env_process, env_folder):
                 if cfg.mode == 'infer':
                     timestamptextfile.close()
                     imutextfile.close()
-                    
                 if phase_count % algorithm_cfg.phases == 0 :
                     phases = False
                     active=False    
