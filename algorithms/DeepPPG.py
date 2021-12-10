@@ -13,7 +13,7 @@ import traceback
 import time, sys, os
 from Yolo.yolo import YOLO
 from datetime import datetime
-from mapping.point_cloud import point
+
 
 def DeepPPG(cfg, env_process, env_folder):
     algorithm_cfg = read_cfg(config_filename='configs/DeepPPG.cfg', verbose=True)
@@ -468,6 +468,7 @@ def DeepPPG(cfg, env_process, env_folder):
                             #newframeavailable = True #boolean if there are new frames available
                             #timestamp = datetime.now().time() #get the current timestamp
                             '''frame_id += 1 #create a new frame id'''
+
                             imagename_rgb = imagefolder_rgb + "/{0}.png\n".format(timestamp)
                             imagename_depth = imagefolder_depth + "/{0}.png\n".format(timestamp)
                             rgb_img = np.array(rgb_img)
@@ -477,6 +478,7 @@ def DeepPPG(cfg, env_process, env_folder):
                                 print("Writing frame number " + str(frame_id) + " failed")
                             writtendepth = cv2.imwrite(imagename_depth , depth_img)
                             if not writtendepth:
+
                                 print("Writing frame number " + str(frame_id) + " failed")
                             #point(client)
                             #def to_numpy_array(self):
