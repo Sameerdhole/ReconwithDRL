@@ -286,6 +286,9 @@ def get_depth_img(client,vehicle_name):
 def get_imu(client,vehicle_name):
     imudata = client.getImuData("", vehicle_name)
     return imudata
+def get_lidar(client,vehicle_name):
+    lidardata = client.geLidarData("", vehicle_name)
+    return lidardata
        
 def get_MonocularImageRGB(client, vehicle_name):
     responses1 = client.simGetImages([

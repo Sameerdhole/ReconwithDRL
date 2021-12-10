@@ -444,7 +444,7 @@ def DeepPPG(cfg, env_process, env_folder):
                             rgb_img=agent[name_agent].get_imgfrod(agent[name_agent],0)
                             depth_img=agent[name_agent].get_imgfrod(agent[name_agent],1)
                             imudata=agent[name_agent].get_imudata(agent[name_agent])
-                            lidardata=agent[name_agent].getLidarData(agent[name_agent])
+                            lidardata=agent[name_agent].get_lidardata(agent[name_agent])
                             quaternion=getattr(lidardata,'orientation')
                             location=getattr(lidardata,'position')
                             timestamp = getattr(imudata,'time_stamp')
