@@ -136,6 +136,10 @@ class PedraAgent():
         imudata=get_imu(self.client, self.vehicle_name)
         
         return imudata
+    def get_lidardata(self,agent):
+        lidardata=get_lidar(self.client, self.vehicle_name)
+        
+        return lidardata    
 
     def get_state(self):
 
