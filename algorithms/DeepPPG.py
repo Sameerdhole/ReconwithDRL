@@ -74,7 +74,7 @@ def DeepPPG(cfg, env_process, env_folder):
 
     elif cfg.mode == 'infer':
         iter = 1
-        my_yolo = YOLO()
+        #my_yolo = YOLO()
         
         #MAPPING PARAMS
         imagefolder = "C:/Users/prani/Desktop/ReconwithDRL/mapping/dataset"
@@ -459,7 +459,7 @@ def DeepPPG(cfg, env_process, env_folder):
                             #newframeavailable = True #boolean if there are new frames available
                             #timestamp = datetime.now().time() #get the current timestamp
                             '''frame_id += 1 #create a new frame id'''
-                            imagename = imagefolder + "/{0}.png\n".format(timestamp)
+                            imagename = imagefolder +"/"+ str(timestamp)+".png"
                             img = np.array(img)
                             written = cv2.imwrite(imagename , img)
                             if not written:
@@ -467,9 +467,9 @@ def DeepPPG(cfg, env_process, env_folder):
                             #point(client)
                             #def to_numpy_array(self):
                             #    return np.array([self.x_val, self.y_val, self.z_val], dtype=np.float32)
-                            timestamptextfile.write("{0}\n".format(timestamp))
-                            #imutextfile.write(str(timestamp)+","+str(angular_velocity[0])+","+str(angular_velocity[1])+","+str(angular_velocity[2])+","+str(linear_acceleration[0])+","+str(linear_acceleration[1])+","+str(linear_acceleration[2])+"\n")
-                            imutextfile.write("{0},{0},{0},{0},{0},{0},{0}\n".format(timestamp, angular_velocity[0], angular_velocity[1], angular_velocity[2], linear_acceleration[0], linear_acceleration[1], linear_acceleration[2]))
+                            timestamptextfile.write(str(timestamp)+"\n")
+                            imutextfile.write(str(timestamp)+","+str(angular_velocity[0])+","+str(angular_velocity[1])+","+str(angular_velocity[2])+","+str(linear_acceleration[0])+","+str(linear_acceleration[1])+","+str(linear_acceleration[2])+"\n")
+                            #imutextfile.write("{0}".format(timestamp)+",{0}".format(angular_velocity[0])+",{0}".format(angular_velocity[1])+",{0}".format(angular_velocity[2])+",{0}".format(linear_acceleration[0])+",{0}".format(linear_acceleration[1])+",{0}\n".format(linear_acceleration[2]))
 
 
 ####################################################################################################################
@@ -502,9 +502,7 @@ def DeepPPG(cfg, env_process, env_folder):
                     phase_count+=1
                     global_buffer= []
 
-                if cfg.mode == 'infer':
-                    timestamptextfile.close()
-                    imutextfile.close()
+                
                 if phase_count % algorithm_cfg.phases == 0 :
                     phases = False
                     active=False    
@@ -529,4 +527,6 @@ def DeepPPG(cfg, env_process, env_folder):
                 automate = False
                 print('Hit r and then backspace to start from this point')
 
-        
+        if cfg.mode == 'infer':
+            timestamptextfile.close()
+            imutextfile.close()
