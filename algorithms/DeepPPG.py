@@ -78,16 +78,19 @@ def DeepPPG(cfg, env_process, env_folder):
         
         #MAPPING PARAMS
         imagefolder = "C:/Users/prani/Desktop/ReconwithDRL/mapping/dataset"
-        imagefolder = imagefolder + "/rgb"
+        imagefolder_rgb = imagefolder + "/rgb"
+        imagefolder_depth = imagefolder + "/depth"
         if not os.path.exists(imagefolder):
             os.makedirs(imagefolder)
 
         frame_id = 0
-        imutxtloc = imagefolder[:-3] + "imudata.txt"
-        timestamptxtloc = imagefolder[:-3] + "timestamp.txt"
-        imutextfile = open(imutxtloc,'w')
-        imutextfile.write("#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\n")
-        timestamptextfile = open(timestamptxtloc,'w')
+        #imutxtloc = imagefolder[:-3] + "imudata.txt"
+        rgb_timestamptxtloc = imagefolder + "rgb.txt"
+        rgb_timestamptxtloc = imagefolder + "depth.txt"
+        #imutextfile = open(imutxtloc,'w')
+        #imutextfile.write("#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\n")
+        rgb_timestamptextfile = open(rgb_timestamptxtloc,'w')
+        depth_timestamptextfile = open(depth_timestamptxtloc,'w')
         
         def detect_image(self,img):
             return self.my_yolo.detect_image(img)
@@ -438,11 +441,17 @@ def DeepPPG(cfg, env_process, env_folder):
 ################################################################################################################
 ############################################ Mapping ############################################################
                             ##3 writers 1)Images 2)Timestamp 3)imu data in tum format
-                            img=agent[name_agent].get_imgfrod(agent[name_agent])
+                            rgb_img=agent[name_agent].get_imgfrod(agent[name_agent],0)
+                            depth_img=agent[name_agent].get_imgfrod(agent[name_agent],1)
                             imudata=agent[name_agent].get_imudata(agent[name_agent])
+                            lidardata=agent[name_agent].getLidarData(agent[name_agent])
+                            quaternion=getattr(lidardata,'orientation')
+                            location=getattr(lidardata,'position')
                             timestamp = getattr(imudata,'time_stamp')
-                            angular_velocity = getattr(imudata,'angular_velocity')
-                            angular_velocity = angular_velocity.to_numpy_array()
+                            quaternion=quaternion.to_numpy_array()
+                            location=location.to_numpy_array()
+                            #angular_velocity = getattr(imudata,'angular_velocity')
+                            #angular_velocity = angular_velocity.to_numpy_array()
                             linear_acceleration = getattr(imudata,'linear_acceleration')
                             linear_acceleration = linear_acceleration.to_numpy_array()
 
@@ -459,19 +468,24 @@ def DeepPPG(cfg, env_process, env_folder):
                             #newframeavailable = True #boolean if there are new frames available
                             #timestamp = datetime.now().time() #get the current timestamp
                             '''frame_id += 1 #create a new frame id'''
-                            imagename = imagefolder +"/"+ str(timestamp)+".png"
-                            img = np.array(img)
-                            written = cv2.imwrite(imagename , img)
-                            if not written:
+
+                            imagename_rgb = imagefolder_rgb + "/{0}.png\n".format(timestamp)
+                            imagename_depth = imagefolder_depth + "/{0}.png\n".format(timestamp)
+                            rgb_img = np.array(rgb_img)
+                            depth_img = np.array(depth_img)
+                            writtenrgb = cv2.imwrite(imagename_rgb , rgb_img)
+                            if not writtenrgb:
+                                print("Writing frame number " + str(frame_id) + " failed")
+                            writtendepth = cv2.imwrite(imagename_depth , depth_img)
+                            if not writtendepth:
+
                                 print("Writing frame number " + str(frame_id) + " failed")
                             #point(client)
                             #def to_numpy_array(self):
                             #    return np.array([self.x_val, self.y_val, self.z_val], dtype=np.float32)
-                            timestamptextfile.write(str(timestamp)+"\n")
-                            imutextfile.write(str(timestamp)+","+str(angular_velocity[0])+","+str(angular_velocity[1])+","+str(angular_velocity[2])+","+str(linear_acceleration[0])+","+str(linear_acceleration[1])+","+str(linear_acceleration[2])+"\n")
-                            #imutextfile.write("{0}".format(timestamp)+",{0}".format(angular_velocity[0])+",{0}".format(angular_velocity[1])+",{0}".format(angular_velocity[2])+",{0}".format(linear_acceleration[0])+",{0}".format(linear_acceleration[1])+",{0}\n".format(linear_acceleration[2]))
-
-
+                            rgb_timestamptextfile.write(str(timestamp)+" "+imagename_rgb+"\n")
+                            depth_timestamptextfile.write(str(timestamp)+" "+imagename_depth+"\n")
+                            #imutextfile.write(str(timestamp)+","+str(angular_velocity[0])+","+str(angular_velocity[1])+","+str(angular_velocity[2])+","+str(linear_acceleration[0])+","+str(linear_acceleration[1])+","+str(linear_acceleration[2])+"\n")
 ####################################################################################################################
                             action,p_a ,action_type = policy_PPG(current_state[name_agent], agent[name_agent])
                             action_word = translate_action(action, algorithm_cfg.num_actions)
@@ -528,5 +542,5 @@ def DeepPPG(cfg, env_process, env_folder):
                 print('Hit r and then backspace to start from this point')
 
         if cfg.mode == 'infer':
-            timestamptextfile.close()
-            imutextfile.close()
+                rgb_timestamptextfile.close()
+                depth_timestamptextfile.close()

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from util.transformations import euler_from_quaternion
 import importlib
 
-from aux_functions import get_CustomImage, get_MonocularImageRGB, get_StereoImageRGB , get_img, get_imu
+from aux_functions import get_CustomImage, get_MonocularImageRGB, get_StereoImageRGB , get_img, get_imu,get_depth_img
 
 
 class PedraAgent():
@@ -124,8 +124,11 @@ class PedraAgent():
 
         return depth, thresh
     
-    def get_imgfrod(self,agent):
-        response=get_img(self.client, self.vehicle_name)
+    def get_imgfrod(self,agent,num):
+        if num==0:
+            response=get_img(self.client, self.vehicle_name)
+        if num==1:
+            response=get_depth_img(self.client, self.vehicle_name)
         
         return response
 
