@@ -86,7 +86,7 @@ def DeepPPG(cfg, env_process, env_folder):
         frame_id = 0
         #imutxtloc = imagefolder[:-3] + "imudata.txt"
         rgb_timestamptxtloc = imagefolder + "rgb.txt"
-        rgb_timestamptxtloc = imagefolder + "depth.txt"
+        depth_timestamptxtloc = imagefolder + "depth.txt"
         #imutextfile = open(imutxtloc,'w')
         #imutextfile.write("#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\n")
         rgb_timestamptextfile = open(rgb_timestamptxtloc,'w')
