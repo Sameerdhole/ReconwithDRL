@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from util.transformations import euler_from_quaternion
 import importlib
 
-from aux_functions import get_CustomImage, get_MonocularImageRGB, get_StereoImageRGB , get_img, get_imu,get_depth_img
+from aux_functions import get_CustomImage, get_MonocularImageRGB, get_StereoImageRGB , get_img, get_imu,get_depth_img, get_lidar
 
 
 class PedraAgent():

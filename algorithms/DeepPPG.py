@@ -80,13 +80,15 @@ def DeepPPG(cfg, env_process, env_folder):
         imagefolder = "C:/Users/prani/Desktop/ReconwithDRL/mapping/dataset"
         imagefolder_rgb = imagefolder + "/rgb"
         imagefolder_depth = imagefolder + "/depth"
-        if not os.path.exists(imagefolder):
-            os.makedirs(imagefolder)
+        if not os.path.exists(imagefolder_rgb):
+            os.makedirs(imagefolder_rgb)
+        if not os.path.exists(imagefolder_depth):
+            os.makedirs(imagefolder_depth)
 
         frame_id = 0
         #imutxtloc = imagefolder[:-3] + "imudata.txt"
-        rgb_timestamptxtloc = imagefolder + "rgb.txt"
-        depth_timestamptxtloc = imagefolder + "depth.txt"
+        rgb_timestamptxtloc = imagefolder + "/rgb.txt"
+        depth_timestamptxtloc = imagefolder + "/depth.txt"
         #imutextfile = open(imutxtloc,'w')
         #imutextfile.write("#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\n")
         rgb_timestamptextfile = open(rgb_timestamptxtloc,'w')
@@ -444,12 +446,12 @@ def DeepPPG(cfg, env_process, env_folder):
                             rgb_img=agent[name_agent].get_imgfrod(agent[name_agent],0)
                             depth_img=agent[name_agent].get_imgfrod(agent[name_agent],1)
                             imudata=agent[name_agent].get_imudata(agent[name_agent])
-                            lidardata=agent[name_agent].get_lidardata(agent[name_agent])
+                            '''lidardata=agent[name_agent].get_lidardata(agent[name_agent])
                             quaternion=getattr(lidardata,'orientation')
-                            location=getattr(lidardata,'position')
+                            location=getattr(lidardata,'position')'''
                             timestamp = getattr(imudata,'time_stamp')
-                            quaternion=quaternion.to_numpy_array()
-                            location=location.to_numpy_array()
+                            #quaternion=quaternion.to_numpy_array()
+                            #location=location.to_numpy_array()
                             #angular_velocity = getattr(imudata,'angular_velocity')
                             #angular_velocity = angular_velocity.to_numpy_array()
                             linear_acceleration = getattr(imudata,'linear_acceleration')
@@ -469,8 +471,12 @@ def DeepPPG(cfg, env_process, env_folder):
                             #timestamp = datetime.now().time() #get the current timestamp
                             '''frame_id += 1 #create a new frame id'''
 
-                            imagename_rgb = imagefolder_rgb + "/{0}.png\n".format(timestamp)
-                            imagename_depth = imagefolder_depth + "/{0}.png\n".format(timestamp)
+                            #imagename_rgb = imagefolder_rgb + "/"+str(timestamp)+".png\n"
+                            #imagename_depth = imagefolder_depth + "/"+str(timestamp)+".png\n"
+
+                            imagename_rgb = imagefolder_rgb + "/{0}.png".format(timestamp)
+                            imagename_depth = imagefolder_depth + "/{0}.png".format(timestamp)
+
                             rgb_img = np.array(rgb_img)
                             depth_img = np.array(depth_img)
                             writtenrgb = cv2.imwrite(imagename_rgb , rgb_img)
@@ -542,5 +548,5 @@ def DeepPPG(cfg, env_process, env_folder):
                 print('Hit r and then backspace to start from this point')
 
         if cfg.mode == 'infer':
-                rgb_timestamptextfile.close()
-                depth_timestamptextfile.close()
+            rgb_timestamptextfile.close()
+            depth_timestamptextfile.close()

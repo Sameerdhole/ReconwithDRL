@@ -75,6 +75,14 @@ def generate_json(cfg):
 
         CameraDefaults['CaptureSettings'].append(camera)
 
+        camera = {}
+        camera['ImageType'] = 1
+        camera['Width'] = cfg.width
+        camera['Height'] = cfg.height
+        camera['FOV_Degrees'] = cfg.fov_degrees
+
+        CameraDefaults['CaptureSettings'].append(camera)
+
         data['CameraDefaults'] = CameraDefaults
     with open(filename, 'w') as outfile:
         json.dump(data, outfile, indent=4)
