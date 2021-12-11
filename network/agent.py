@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 from util.transformations import euler_from_quaternion
 import importlib
 
-from aux_functions import get_CustomImage, get_MonocularImageRGB, get_StereoImageRGB , get_img, get_imu,get_depth_img, get_lidar
-
+from aux_functions import get_CustomImage, get_MonocularImageRGB, get_StereoImageRGB , get_img, get_imu,get_depth_img, get_ks
 
 class PedraAgent():
     def __init__(self, cfg, client, name, vehicle_name):
@@ -136,10 +135,10 @@ class PedraAgent():
         imudata=get_imu(self.client, self.vehicle_name)
         
         return imudata
-    def get_lidardata(self,agent):
-        lidardata=get_lidar(self.client, self.vehicle_name)
+    def get_ksdata(self,agent):
+        ks=get_ks(self.client, self.vehicle_name)
         
-        return lidardata    
+        return ks    
 
     def get_state(self):
 

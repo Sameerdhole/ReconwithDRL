@@ -89,10 +89,19 @@ def DeepPPG(cfg, env_process, env_folder):
         #imutxtloc = imagefolder[:-3] + "imudata.txt"
         rgb_timestamptxtloc = imagefolder + "/rgb.txt"
         depth_timestamptxtloc = imagefolder + "/depth.txt"
+        accelerometertxtloc = imagefolder + "/accelerometer.txt"
+        groundtruthtxtloc = imagefolder + "/groundtruth.txt"
         #imutextfile = open(imutxtloc,'w')
         #imutextfile.write("#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\n")
         rgb_timestamptextfile = open(rgb_timestamptxtloc,'w')
         depth_timestamptextfile = open(depth_timestamptxtloc,'w')
+        accelerometertextfile = open(accelerometertxtloc,'w')
+        groundtruthtextfile = open(groundtruthtxtloc,'w')
+
+        rgb_timestamptextfile.write("# color images\n# timestamp filename\n")
+        depth_timestamptextfile.write("# depth maps\n# timestamp filename\n")
+        accelerometertextfile.write("# accelerometer data\n# timestamp ax ay az\n")
+        groundtruthtextfile.write("# ground truth trajectory\n# timestamp tx ty tz qx qy qz qw\n")
         
         def detect_image(self,img):
             return self.my_yolo.detect_image(img)
@@ -446,18 +455,23 @@ def DeepPPG(cfg, env_process, env_folder):
                             rgb_img=agent[name_agent].get_imgfrod(agent[name_agent],0)
                             depth_img=agent[name_agent].get_imgfrod(agent[name_agent],1)
                             imudata=agent[name_agent].get_imudata(agent[name_agent])
-                            '''lidardata=agent[name_agent].get_lidardata(agent[name_agent])
-                            quaternion=getattr(lidardata,'orientation')
-                            location=getattr(lidardata,'position')'''
                             timestamp = getattr(imudata,'time_stamp')
-                            #quaternion=quaternion.to_numpy_array()
-                            #location=location.to_numpy_array()
                             #angular_velocity = getattr(imudata,'angular_velocity')
                             #angular_velocity = angular_velocity.to_numpy_array()
-                            linear_acceleration = getattr(imudata,'linear_acceleration')
-                            linear_acceleration = linear_acceleration.to_numpy_array()
+                            #linear_acceleration = getattr(imudata,'linear_acceleration')
+                            #linear_acceleration = linear_acceleration.to_numpy_array()
 
-        
+                            #######################kinematic state###############
+                            
+                            kinematicstate=agent[name_agent].get_ksdata(agent[name_agent])
+                            
+                            linear_acceleration=getattr(kinematicstate,'linear_acceleration')
+                            pose=getattr(kinematicstate,'position')
+                            quaternions=getattr(kinematicstate,'orientation')
+
+
+                            ######################################################
+
                             #start a Window to show the prossesed images in
                             #cv2.startWindowThread()
                             #cv2.namedWindow('img', cv2.WINDOW_NORMAL)
@@ -489,6 +503,8 @@ def DeepPPG(cfg, env_process, env_folder):
                             #point(client)
                             #def to_numpy_array(self):
                             #    return np.array([self.x_val, self.y_val, self.z_val], dtype=np.float32)
+                            groundtruthtextfile.write(str(timestamp)+" "+ str(pose[0])+ " " + str(pose[1])+ " "+ str(pose[2])+ " "+ str(quaternions[1])+ " " + str(quaternions[2])+ " " + str(quaternions[3])+ " " + str(quaternions[0])+ "\n")
+                            accelerometertextfile.write(str(timestamp)+ " " +str(linear_acceleration[0]) + " " +str(linear_acceleration[1]) + " " +str(linear_acceleration[2])+"\n" )
                             rgb_timestamptextfile.write(str(timestamp)+" "+imagename_rgb+"\n")
                             depth_timestamptextfile.write(str(timestamp)+" "+imagename_depth+"\n")
                             #imutextfile.write(str(timestamp)+","+str(angular_velocity[0])+","+str(angular_velocity[1])+","+str(angular_velocity[2])+","+str(linear_acceleration[0])+","+str(linear_acceleration[1])+","+str(linear_acceleration[2])+"\n")
@@ -550,3 +566,5 @@ def DeepPPG(cfg, env_process, env_folder):
         if cfg.mode == 'infer':
             rgb_timestamptextfile.close()
             depth_timestamptextfile.close()
+            groundtruthtextfile.close()
+            accelerometertextfile.close()
