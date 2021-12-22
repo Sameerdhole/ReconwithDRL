@@ -154,16 +154,16 @@ class initialize_network_DeepPPO():
 
         MaxProbActions = np.max(ProbActions)
         # Log to tensorboard
-        self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(loss) / batch_size,
-                                index=self.iter_policy)
-        self.log_to_tensorboard(tag='Loss_Actor', group=self.vehicle_name, value=LA.norm(loss_actor) / batch_size,
-                                index=self.iter_policy)
-        self.log_to_tensorboard(tag='Loss_Critic', group=self.vehicle_name, value=LA.norm(loss_critic) / batch_size,
-                                index=self.iter_policy)
-        self.log_to_tensorboard(tag='Loss_Entropy', group=self.vehicle_name, value=LA.norm(loss_entropy) / batch_size,
-                                index=self.iter_policy)
-        self.log_to_tensorboard(tag='Learning Rate', group=self.vehicle_name, value=lr, index=self.iter_policy)
-        self.log_to_tensorboard(tag='MaxProb', group=self.vehicle_name, value=MaxProbActions, index=self.iter_policy)
+        #self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(loss) / batch_size,
+        #                        index=self.iter_policy)
+        #self.log_to_tensorboard(tag='Loss_Actor', group=self.vehicle_name, value=LA.norm(loss_actor) / batch_size,
+        #                        index=self.iter_policy)
+        #self.log_to_tensorboard(tag='Loss_Critic', group=self.vehicle_name, value=LA.norm(loss_critic) / batch_size,
+        #                        index=self.iter_policy)
+        #self.log_to_tensorboard(tag='Loss_Entropy', group=self.vehicle_name, value=LA.norm(loss_entropy) / batch_size,
+        #                        index=self.iter_policy)
+        #self.log_to_tensorboard(tag='Learning Rate', group=self.vehicle_name, value=lr, index=self.iter_policy)
+        #self.log_to_tensorboard(tag='MaxProb', group=self.vehicle_name, value=MaxProbActions, index=self.iter_policy)
 
     def action_selection_with_prob(self, state):
         action = np.zeros(dtype=int, shape=[state.shape[0], 1])
@@ -195,11 +195,11 @@ class initialize_network_DeepPPO():
 
         return action.astype(int)
 
-    def log_to_tensorboard(self, tag, group, value, index):
+    '''def log_to_tensorboard(self, tag, group, value, index):
         summary = tf.Summary()
         tag = group + '/' + tag
         summary.value.add(tag=tag, simple_value=value)
-        self.stat_writer.add_summary(summary, index)
+        self.stat_writer.add_summary(summary, index)'''
 
     def save_network(self, save_path, episode=''):
         save_path = save_path + self.vehicle_name + '/' + self.vehicle_name + '_' + str(episode)
@@ -453,14 +453,13 @@ class initialize_network_DeepPPG():
       
 
         # Log to tensorboard
-        self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(L_pi) / batch_size,
+        #self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(L_pi) / batch_size,
+        #                        index=self.iter_policy)
+        self.log_to_tensorboard(tag='Policy_Loss', group=self.vehicle_name, value=LA.norm(L_pi) / batch_size,
                                 index=self.iter_policy)
-        self.log_to_tensorboard(tag='Loss_Actor', group=self.vehicle_name, value=LA.norm(L_v) / batch_size,
+        self.log_to_tensorboard(tag='Value_Loss', group=self.vehicle_name, value=LA.norm(L_v) / batch_size,
                                 index=self.iter_policy)
-        self.log_to_tensorboard(tag='Loss_Critic', group=self.vehicle_name, value=LA.norm(L_clip) / batch_size,
-                                index=self.iter_policy)
-        self.log_to_tensorboard(tag='Loss_Entropy', group=self.vehicle_name, value=LA.norm(L_entrop) / batch_size,
-                                index=self.iter_policy)
+        
         self.log_to_tensorboard(tag='Learning Rate', group=self.vehicle_name, value=lr, index=self.iter_policy)
         #self.log_to_tensorboard(tag='MaxProb', group=self.vehicle_name, value=MaxProbActions, index=self.iter_policy)
 
@@ -518,8 +517,10 @@ class initialize_network_DeepPPG():
                                                         self.prob_old: prob_old,
                                                         self.GAE: GAE})
 
-       
-
+        self.log_to_tensorboard(tag='Joint_Loss', group=self.vehicle_name, value=LA.norm(L_jo) / batch_size,
+                                index=self.iter_policy)
+        self.log_to_tensorboard(tag='Aux_Loss', group=self.vehicle_name, value=LA.norm(L_a) / batch_size,
+                                index=self.iter_policy)
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):
             self.beta=selfbeta/2

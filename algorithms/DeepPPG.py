@@ -284,21 +284,21 @@ def DeepPPG(cfg, env_process, env_folder):
 
 
                                     else:
-                                        #agent[name_agent].network_model.log_to_tensorboard(tag='Return',
-                                        #                                                   group=name_agent,
-                                        #                                                   value=ret[name_agent],
-                                        #                                                   index=epi_num[name_agent])
+                                        agent[name_agent].network_model.log_to_tensorboard(tag='Return',
+                                                                                           group=name_agent,
+                                                                                           value=ret[name_agent],
+                                                                                           index=epi_num[name_agent])
 
-                                        #agent[name_agent].network_model.log_to_tensorboard(tag='Safe Flight',
-                                        #                                                   group=name_agent,
-                                        #                                                   value=distance[name_agent],
-                                        #                                                   index=epi_num[name_agent])
+                                        agent[name_agent].network_model.log_to_tensorboard(tag='Safe Flight',
+                                                                                           group=name_agent,
+                                                                                           value=distance[name_agent],
+                                                                                           index=epi_num[name_agent])
 
-                                        #agent[name_agent].network_model.log_to_tensorboard(tag='Episode Length',
-                                        #                                                   group=name_agent,
-                                        #                                                   value=len(
-                                        #                                                       data_tuple[name_agent]),
-                                        #                                                   index=epi_num[name_agent])
+                                        agent[name_agent].network_model.log_to_tensorboard(tag='Episode Length',
+                                                                                           group=name_agent,
+                                                                                           value=len(
+                                                                                               data_tuple[name_agent]),
+                                                                                           index=epi_num[name_agent])
 
                                         # Train episode
                                         
@@ -314,9 +314,9 @@ def DeepPPG(cfg, env_process, env_folder):
 
                                         c = agent_this_drone.network_model.get_vars()[15][0]
                                         
-                                        #agent_this_drone.network_model.log_to_tensorboard(tag='weight', group=name_agent,
-                                        #                                                  value=c[0],
-                                        #                                                  index=epi_num[name_agent])
+                                        agent_this_drone.network_model.log_to_tensorboard(tag='weight', group=name_agent,
+                                                                                          value=c[0],
+                                                                                          index=epi_num[name_agent])
 
                                         data_tuple[name_agent] = []
                                         epi_num[name_agent] += 1
@@ -354,15 +354,15 @@ def DeepPPG(cfg, env_process, env_folder):
                                 for i in range(0, len(gpu_memory)):
                                     tag_mem = 'GPU' + str(i) + '-Memory-GB'
                                     tag_util = 'GPU' + str(i) + 'Utilization-%'
-                                    #agent_this_drone.network_model.log_to_tensorboard(tag=tag_mem, group='SystemStats',
-                                    #                                                  value=gpu_memory[i],
-                                    #                                                  index=iter[name_agent])
-                                    #agent_this_drone.network_model.log_to_tensorboard(tag=tag_util, group='SystemStats',
-                                    #                                                  value=gpu_utilization[i],
-                                    #                                                  index=iter[name_agent])
-                                #agent_this_drone.network_model.log_to_tensorboard(tag='Memory-GB', group='SystemStats',
-                                    #                                              value=sys_memory,
-                                    #                                              index=iter[name_agent])
+                                    agent_this_drone.network_model.log_to_tensorboard(tag=tag_mem, group='SystemStats',
+                                                                                      value=gpu_memory[i],
+                                                                                      index=iter[name_agent])
+                                    agent_this_drone.network_model.log_to_tensorboard(tag=tag_util, group='SystemStats',
+                                                                                      value=gpu_utilization[i],
+                                                                                      index=iter[name_agent])
+                                    agent_this_drone.network_model.log_to_tensorboard(tag='Memory-GB', group='SystemStats',
+                                                                                  value=sys_memory,
+                                                                                  index=iter[name_agent])
 
                                 s_log = '{:<6s} - Level {:>2d} - Iter: {:>6d}/{:<5d} {:<8s}-{:>5s} lr: {:>1.8f} Ret = {:>+6.4f} Last Crash = {:<5d} t={:<1.3f} SF = {:<5.4f}  Reward: {:<+1.4f}  '.format(
                                         name_agent,int(level[name_agent]),iter[name_agent],epi_num[name_agent],action_word,action_type,
@@ -458,16 +458,16 @@ def DeepPPG(cfg, env_process, env_folder):
                             timestamp = getattr(imudata,'time_stamp')
                             #angular_velocity = getattr(imudata,'angular_velocity')
                             #angular_velocity = angular_velocity.to_numpy_array()
-                            #linear_acceleration = getattr(imudata,'linear_acceleration')
-                            #linear_acceleration = linear_acceleration.to_numpy_array()
+                            linear_acceleration = getattr(imudata,'linear_acceleration')
+                            linear_acceleration = linear_acceleration.to_numpy_array()
 
                             #######################kinematic state###############
                             
                             kinematicstate=agent[name_agent].get_ksdata(agent[name_agent])
                             
-                            linear_acceleration=getattr(kinematicstate,'linear_acceleration')
-                            pose=getattr(kinematicstate,'position')
-                            quaternions=getattr(kinematicstate,'orientation')
+                            #linear_acceleration=getattr(kinematicstate,'linear_acceleration').to_numpy_array()
+                            pose=getattr(kinematicstate,'position').to_numpy_array()
+                            quaternions=getattr(imudata,'orientation').to_numpy_array()
 
 
                             ######################################################
@@ -505,8 +505,8 @@ def DeepPPG(cfg, env_process, env_folder):
                             #    return np.array([self.x_val, self.y_val, self.z_val], dtype=np.float32)
                             groundtruthtextfile.write(str(timestamp)+" "+ str(pose[0])+ " " + str(pose[1])+ " "+ str(pose[2])+ " "+ str(quaternions[1])+ " " + str(quaternions[2])+ " " + str(quaternions[3])+ " " + str(quaternions[0])+ "\n")
                             accelerometertextfile.write(str(timestamp)+ " " +str(linear_acceleration[0]) + " " +str(linear_acceleration[1]) + " " +str(linear_acceleration[2])+"\n" )
-                            rgb_timestamptextfile.write(str(timestamp)+" "+imagename_rgb+"\n")
-                            depth_timestamptextfile.write(str(timestamp)+" "+imagename_depth+"\n")
+                            rgb_timestamptextfile.write(str(timestamp)+" "+imagename_rgb[52:]+"\n")
+                            depth_timestamptextfile.write(str(timestamp)+" "+imagename_depth[52:]+"\n")
                             #imutextfile.write(str(timestamp)+","+str(angular_velocity[0])+","+str(angular_velocity[1])+","+str(angular_velocity[2])+","+str(linear_acceleration[0])+","+str(linear_acceleration[1])+","+str(linear_acceleration[2])+"\n")
 ####################################################################################################################
                             action,p_a ,action_type = policy_PPG(current_state[name_agent], agent[name_agent])
