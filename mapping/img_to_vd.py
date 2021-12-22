@@ -3,14 +3,12 @@ import numpy as np
 import glob
  
 img_array = []
-for filename in glob.glob('C:/Users/prani/Documents/AirSim/2021-12-08-13-28-01/images/*.png'):
-    print("1")
+for filename in glob.glob('C:/Users/prani/Documents/AirSim/2021-12-13-20-50-40/images/*.png'):
     img = cv2.imread(filename)
     height, width, layers = img.shape
     size = (width,height)
     print(size)
     img_array.append(img) 
-print("2")
 out = cv2.VideoWriter('project.avi',cv2.VideoWriter_fourcc(*'DIVX'), 15, size)
  
 for i in range(len(img_array)):

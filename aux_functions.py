@@ -273,7 +273,7 @@ def get_img(client,vehicle_name):
 def get_depth_img(client,vehicle_name):
     responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.DepthPlanner,
     pixels_as_float=True, compress=False),
-    airsim.ImageRequest("1", airsim.ImageType.DepthPlanner, False, False)])
+    airsim.ImageRequest("1", airsim.ImageType.DepthPerspective, False, False)])
     color = responses[1]
     imgcolor = np.fromstring(color.image_data_uint8, dtype=np.uint8)
     imgcolor = imgcolor.reshape(responses[1].height, responses[1].width, -1)

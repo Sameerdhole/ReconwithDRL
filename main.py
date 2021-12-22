@@ -68,7 +68,7 @@ def generate_json(cfg):
         CameraDefaults['CaptureSettings'].append(camera)
 
         camera = {}
-        camera['ImageType'] = 3
+        camera['ImageType'] = 2
         camera['Width'] = cfg.width
         camera['Height'] = cfg.height
         camera['FOV_Degrees'] = cfg.fov_degrees

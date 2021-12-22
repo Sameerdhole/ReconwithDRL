@@ -1,6 +1,3 @@
-# Author: Aqeel Anwar(ICSRL)
-# Created: 2/22/2019, 4:57 PM
-# Email: aqeel.anwar@gatech.edu
 import numpy as np
 import tensorflow as tf
 
