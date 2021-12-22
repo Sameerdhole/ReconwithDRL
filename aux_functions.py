@@ -655,7 +655,7 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
 #        p_a = np.zeros(shape=(episode_len,1))
     curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
     actions = np.zeros(shape=(episode_len, 1), dtype=int)
-    td_targ = np.zeros(shape=(episode_len,1))
+    TD_target = np.zeros(shape=(episode_len,1))
     p_a = np.zeros(shape=(episode_len,1))
     
     for k in range(len(buff)):   

@@ -236,9 +236,6 @@ class initialize_network_DeepPPG():
             self.eps_clip = cfg.eps_clip
             self.beta=cfg.beta
             self.beta_s=cfg.beta_s
-            ###YOLO class###
-            
-
             # Placeholders
             self.batch_size = tf.placeholder(tf.int32, shape=())
             self.learning_rate = tf.placeholder(tf.float32, shape=())
@@ -259,13 +256,12 @@ class initialize_network_DeepPPG():
             self.D_target = tf.placeholder(tf.float32, shape=[None, 1], name='D_target')
             # Select the deep network
 
-            #self.model_pi = C3F2_Actor(self.X,cfg.num_actions,cfg.train_fc)
-            #self.model_v = C3F2_Critic(self.X,cfg.num_actions,cfg.train_fc)
-            self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc)
-            ##can decouple actor and critic here based on models.
-            ##get_state values feeds params to model.state_value which in turn calls c3f2 model and returns state value 
-            self.pi = self.model.action_probs
-            self.state_value = self.model.state_value
+            self.model_pi = C3F2_Actor(self.X,cfg.num_actions,cfg.train_fc)
+            self.model_v = C3F2_Critic(self.X,cfg.num_actions,cfg.train_fc)
+            #self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc) 
+            self.pi = self.model_pi.action_probs
+            self.policy_values=self.model_pi.action_policy_value
+            self.state_value = self.model._v.state_value
 
             self.old_pi = self.pi
 
@@ -287,16 +283,17 @@ class initialize_network_DeepPPG():
             self.L_pi=self.loss_actor_op+self.loss_entropy*self.beta_s
             
             #L aux auxilary objective/L_value
-            self.L_aux = 0.5*mse_loss(self.state_value, self.TD_target)
+            self.L_aux = 0.5*mse_loss(self.policy_values, self.TD_target)
 
             #Value Loss
             self.L_v = 0.5*mse_loss(self.state_value, self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            self.kl=kl_loss(self.pi, self.prob_old)
+            self.action_log_probs=tf.log(self.pi+1e-10)
+            self.kl=kl_loss(self.action_log_probs, self.prob_old)
             
             #Ljoint
-            self.L_joint = self.L_aux + self.loss_actor_op
+            self.L_joint = self.L_aux + self.kl
             
             #OPTIMIZERS
             
@@ -311,10 +308,6 @@ class initialize_network_DeepPPG():
             #Value(E_v) OP
             self.E_v_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
                 self.L_v, name="train_main")
-
-            #Value(E_aux) OP
-            #self.E_aux_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
-                #self.L_aux, name="train_main")
             
             #L_joint OP
             self.E_joint_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
@@ -427,7 +420,8 @@ class initialize_network_DeepPPG():
         L_p=self.L_pi
         L_pi_eval=self.E_pi_op
         predict_eval = self.pi
-        predict_state = self.state_value
+
+        predict_statev = self.state_value
         L_v_eval=self.E_v_op
 
 
@@ -446,15 +440,13 @@ class initialize_network_DeepPPG():
             _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
-                                                        self.actions: actions,
+                                                        '''self.actions: actions,'''
                                                         self.TD_target: TD_target,
-                                                        self.prob_old: prob_old,
-                                                        self.GAE: GAE})
+                                                        '''self.prob_old: prob_old,'''
+                                                        '''self.GAE: GAE'''})
       
 
         # Log to tensorboard
-        #self.log_to_tensorboard(tag='Loss_Total', group=self.vehicle_name, value=LA.norm(L_pi) / batch_size,
-        #                        index=self.iter_policy)
         self.log_to_tensorboard(tag='Policy_Loss', group=self.vehicle_name, value=LA.norm(L_pi) / batch_size,
                                 index=self.iter_policy)
         self.log_to_tensorboard(tag='Value_Loss', group=self.vehicle_name, value=LA.norm(L_v) / batch_size,
@@ -491,31 +483,33 @@ class initialize_network_DeepPPG():
         self.iter_policy += 1
         batch_size = xs.shape[0]
         L_j=self.L_joint
+        predict_eval = self.pi
         L_j_eval=self.E_joint_op
         predict_eval = self.pi
         predict_state = self.state_value
+        predict_statepi = self.policy_values
         L_v_eval=self.E_v_op
 
 
         #optimize L_pi
         
-        _,L_jo,L_a,L_clip, ProbActions = self.sess.run([L_j_eval,L_j,self.L_aux,self.loss_actor_op, predict_eval],
+        _,L_jo,L_a,L_kl, statepi , probactions = self.sess.run([L_j_eval,L_j,self.L_aux,self.kl_loss, predict_statepi,predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
-                                                        self.actions: actions,
+                                                        '''self.actions: actions,'''
                                                         self.TD_target: TD_target,
                                                         self.prob_old: prob_old,
-                                                        self.GAE: GAE})
+                                                        '''self.GAE: GAE'''})
         
         #optimize L_v
         
         _,L_v, state_value = self.sess.run([L_v_eval,self.L_v, predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
-                                                        self.actions: actions,
+                                                        '''self.actions: actions,'''
                                                         self.TD_target: TD_target,
-                                                        self.prob_old: prob_old,
-                                                        self.GAE: GAE})
+                                                        '''self.prob_old: prob_old,
+                                                        self.GAE: GAE'''})
 
         self.log_to_tensorboard(tag='Joint_Loss', group=self.vehicle_name, value=LA.norm(L_jo) / batch_size,
                                 index=self.iter_policy)
