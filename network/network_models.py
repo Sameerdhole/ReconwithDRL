@@ -261,7 +261,7 @@ class initialize_network_DeepPPG():
             #self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc) 
             self.pi = self.model_pi.action_probs
             self.policy_values=self.model_pi.action_policy_value
-            self.state_value = self.model._v.state_value
+            self.state_value = self.model_v.state_value
 
             self.old_pi = self.pi
 
@@ -421,7 +421,7 @@ class initialize_network_DeepPPG():
         L_pi_eval=self.E_pi_op
         predict_eval = self.pi
 
-        predict_statev = self.state_value
+        predict_state = self.state_value
         L_v_eval=self.E_v_op
 
 
@@ -440,10 +440,10 @@ class initialize_network_DeepPPG():
             _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
-                                                        '''self.actions: actions,'''
+                                                        self.actions: actions,
                                                         self.TD_target: TD_target,
-                                                        '''self.prob_old: prob_old,'''
-                                                        '''self.GAE: GAE'''})
+                                                        self.prob_old: prob_old,
+                                                        self.GAE: GAE})
       
 
         # Log to tensorboard
@@ -493,27 +493,29 @@ class initialize_network_DeepPPG():
 
         #optimize L_pi
         
-        _,L_jo,L_a,L_kl, statepi , probactions = self.sess.run([L_j_eval,L_j,self.L_aux,self.kl_loss, predict_statepi,predict_eval],
+        _,L_jo,L_a,L_kl, statepi , probactions = self.sess.run([L_j_eval,L_j,self.L_aux,self.kl, predict_statepi,predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
-                                                        '''self.actions: actions,'''
+                                                        self.actions: actions,
                                                         self.TD_target: TD_target,
                                                         self.prob_old: prob_old,
-                                                        '''self.GAE: GAE'''})
+                                                        self.GAE: GAE})
         
         #optimize L_v
         
         _,L_v, state_value = self.sess.run([L_v_eval,self.L_v, predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
-                                                        '''self.actions: actions,'''
+                                                        self.actions: actions,
                                                         self.TD_target: TD_target,
-                                                        '''self.prob_old: prob_old,
-                                                        self.GAE: GAE'''})
+                                                        self.prob_old: prob_old,
+                                                        self.GAE: GAE})
 
         self.log_to_tensorboard(tag='Joint_Loss', group=self.vehicle_name, value=LA.norm(L_jo) / batch_size,
                                 index=self.iter_policy)
         self.log_to_tensorboard(tag='Aux_Loss', group=self.vehicle_name, value=LA.norm(L_a) / batch_size,
+                                index=self.iter_policy)
+        self.log_to_tensorboard(tag='L_kl', group=self.vehicle_name, value=LA.norm(L_kl) / batch_size,
                                 index=self.iter_policy)
 """    def update_beta():
         if(self.kl<self.D_target/1.5 ):
