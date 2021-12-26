@@ -661,7 +661,7 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
     for k in range(len(buff)):   
         curr_states, actions, TD_target, p_a = buff[k]
         
-        V_s = agent.network_model.get_state_value(curr_states)
+        V_s = agent.network_model.get_policy_state_value(curr_states)
        
         #V_s_ = agent.network_model.get_state_value(next_states)
         #TD_target = rewards + gamma*V_s_* crashes

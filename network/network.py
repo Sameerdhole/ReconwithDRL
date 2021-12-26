@@ -620,16 +620,16 @@ class C3F2_Actor(object):
 
         self.flat = tf.contrib.layers.flatten(self.conv3)
 
-        
+                
 
         self.fc1_actions = self.FullyConnected(self.flat, units_in=1024, units_out=1024, act='relu', trainable=train_fc6)
         self.fc2_actions = self.FullyConnected(self.fc1_actions, units_in=1024, units_out=num_actions, act='softmax',
                                        trainable=train_fc7)
-        self.fc3_actions = self.FullyConnected(self.fc2_actions, units_in=num_actions, units_out=1, act='linear',
-                                       trainable=train_fc7)
+        self.fc2_values = self.FullyConnected(self.fc2_actions, units_in=num_actions, units_out=1, act='linear',
+                                       trainable=train_fc8)
 
         self.action_probs = self.fc2_actions
-        self.action_policy_value= self.fc3_actions
+        self.action_policy_value= self.fc2_values
 
     def conv(self, input, k, out, s, p, trainable=True):
 
