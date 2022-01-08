@@ -654,6 +654,8 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
 #        td_targ = np.zeros(shape=(episode_len,1))
 #        p_a = np.zeros(shape=(episode_len,1))
     curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+    #next_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+
     actions = np.zeros(shape=(episode_len, 1), dtype=int)
     TD_target = np.zeros(shape=(episode_len,1))
     p_a = np.zeros(shape=(episode_len,1))
@@ -662,9 +664,8 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
         curr_states, actions, TD_target, p_a = buff[k]
         
         V_s = agent.network_model.get_policy_state_value(curr_states)
-       
-        #V_s_ = agent.network_model.get_state_value(next_states)
-        #TD_target = rewards + gamma*V_s_* crashes
+        #V_s_ = agent.network_model.get_state_value(curr_states)
+        #TD_target_p = rewards + gamma*V_s_* crashes
         delta = TD_target - V_s
         GAE_array = []
         GAE=0

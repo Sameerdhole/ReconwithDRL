@@ -77,7 +77,7 @@ def DeepPPG(cfg, env_process, env_folder):
         #my_yolo = YOLO()
         
         #MAPPING PARAMS
-        imagefolder = "C:/Users/prani/Desktop/ReconwithDRL/mapping/dataset"
+        '''imagefolder = "C:/Users/prani/Desktop/ReconwithDRL/mapping/dataset"
         imagefolder_rgb = imagefolder + "/rgb"
         imagefolder_depth = imagefolder + "/depth"
         if not os.path.exists(imagefolder_rgb):
@@ -101,7 +101,7 @@ def DeepPPG(cfg, env_process, env_folder):
         rgb_timestamptextfile.write("# color images\n# timestamp filename\n")
         depth_timestamptextfile.write("# depth maps\n# timestamp filename\n")
         accelerometertextfile.write("# accelerometer data\n# timestamp ax ay az\n")
-        groundtruthtextfile.write("# ground truth trajectory\n# timestamp tx ty tz qx qy qz qw\n")
+        groundtruthtextfile.write("# ground truth trajectory\n# timestamp tx ty tz qx qy qz qw\n")'''
         
         def detect_image(self,img):
             return self.my_yolo.detect_image(img)
@@ -437,7 +437,7 @@ def DeepPPG(cfg, env_process, env_folder):
 
 ############################################Object detection########################################################
                         
-                            '''img=agent[name_agent].get_imgfrod(agent[name_agent])
+                            '''img=agent[name_agent].get_imgfrod(agent[name_agent],0)
 
 
 
@@ -451,7 +451,7 @@ def DeepPPG(cfg, env_process, env_folder):
 
 ################################################################################################################
 ############################################ Mapping ############################################################
-                            ##3 writers 1)Images 2)Timestamp 3)imu data in tum format
+                            '''##3 writers 1)Images 2)Timestamp 3)imu data in tum format
                             rgb_img=agent[name_agent].get_imgfrod(agent[name_agent],0)
                             depth_img=agent[name_agent].get_imgfrod(agent[name_agent],1)
                             imudata=agent[name_agent].get_imudata(agent[name_agent])
@@ -483,7 +483,7 @@ def DeepPPG(cfg, env_process, env_folder):
                             
                             #newframeavailable = True #boolean if there are new frames available
                             #timestamp = datetime.now().time() #get the current timestamp
-                            '''frame_id += 1 #create a new frame id'''
+                            frame_id += 1 #create a new frame id
 
                             #imagename_rgb = imagefolder_rgb + "/"+str(timestamp)+".png\n"
                             #imagename_depth = imagefolder_depth + "/"+str(timestamp)+".png\n"
@@ -506,7 +506,7 @@ def DeepPPG(cfg, env_process, env_folder):
                             groundtruthtextfile.write(str(timestamp)+" "+ str(pose[0])+ " " + str(pose[1])+ " "+ str(pose[2])+ " "+ str(quaternions[1])+ " " + str(quaternions[2])+ " " + str(quaternions[3])+ " " + str(quaternions[0])+ "\n")
                             accelerometertextfile.write(str(timestamp)+ " " +str(linear_acceleration[0]) + " " +str(linear_acceleration[1]) + " " +str(linear_acceleration[2])+"\n" )
                             rgb_timestamptextfile.write(str(timestamp)+" "+imagename_rgb[52:]+"\n")
-                            depth_timestamptextfile.write(str(timestamp)+" "+imagename_depth[52:]+"\n")
+                            depth_timestamptextfile.write(str(timestamp)+" "+imagename_depth[52:]+"\n")'''
                             #imutextfile.write(str(timestamp)+","+str(angular_velocity[0])+","+str(angular_velocity[1])+","+str(angular_velocity[2])+","+str(linear_acceleration[0])+","+str(linear_acceleration[1])+","+str(linear_acceleration[2])+"\n")
 ####################################################################################################################
                             action,p_a ,action_type = policy_PPG(current_state[name_agent], agent[name_agent])
@@ -563,8 +563,8 @@ def DeepPPG(cfg, env_process, env_folder):
                 automate = False
                 print('Hit r and then backspace to start from this point')
 
-        if cfg.mode == 'infer':
+        '''if cfg.mode == 'infer':
             rgb_timestamptextfile.close()
             depth_timestamptextfile.close()
             groundtruthtextfile.close()
-            accelerometertextfile.close()
+            accelerometertextfile.close()'''

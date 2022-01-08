@@ -25,6 +25,35 @@ def generate_json(cfg):
 
     if cfg.mode == 'move_around':
         data['SimMode'] = 'ComputerVision'
+        CameraDefaults = {}
+        CameraDefaults['CaptureSettings']=[]
+        # CaptureSettings=[]
+
+        camera = {}
+        camera['ImageType'] = 0
+        camera['Width'] = cfg.width
+        camera['Height'] = cfg.height
+        camera['FOV_Degrees'] = cfg.fov_degrees
+
+        CameraDefaults['CaptureSettings'].append(camera)
+
+        camera = {}
+        camera['ImageType'] = 2
+        camera['Width'] = cfg.width
+        camera['Height'] = cfg.height
+        camera['FOV_Degrees'] = cfg.fov_degrees
+
+        CameraDefaults['CaptureSettings'].append(camera)
+
+        camera = {}
+        camera['ImageType'] = 1
+        camera['Width'] = cfg.width
+        camera['Height'] = cfg.height
+        camera['FOV_Degrees'] = cfg.fov_degrees
+
+        CameraDefaults['CaptureSettings'].append(camera)
+
+        data['CameraDefaults'] = CameraDefaults
     else:
         data['SettingsVersion'] = 1.2
         data['LocalHostIp'] = cfg.ip_address
