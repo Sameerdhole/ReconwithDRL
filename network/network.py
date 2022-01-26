@@ -583,7 +583,7 @@ class C3F2_Critic(object):
 class C3F2_Actor(object):
 
     def __init__(self, x, num_actions, train_type):
-        #We get Thata pi and pi from here 
+        #We get Theta pi and pi from here 
         #List of losses optimized wrt this:Li=[ Clip and Entropy ], Aux , kl divergence(wrt old and new probablities) and join tloss ie. the sum of aux and kl
 
         self.x = x
@@ -621,13 +621,13 @@ class C3F2_Actor(object):
         self.flat = tf.contrib.layers.flatten(self.conv3)
 
                 
-
         self.fc1_actions = self.FullyConnected(self.flat, units_in=1024, units_out=1024, act='relu', trainable=train_fc6)
         self.fc2_actions = self.FullyConnected(self.fc1_actions, units_in=1024, units_out=num_actions, act='softmax',
                                        trainable=train_fc7)
         self.fc2_values = self.FullyConnected(self.fc2_actions, units_in=num_actions, units_out=1, act='linear',
-                                       trainable=train_fc8)
+                                       trainable=train_fc7)
 
+    
         self.action_probs = self.fc2_actions
         self.action_policy_value= self.fc2_values
 

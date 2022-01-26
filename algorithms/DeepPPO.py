@@ -311,15 +311,15 @@ def DeepPPO(cfg, env_process, env_folder):
                                 for i in range(0, len(gpu_memory)):
                                     tag_mem = 'GPU' + str(i) + '-Memory-GB'
                                     tag_util = 'GPU' + str(i) + 'Utilization-%'
-                                    agent_this_drone.network_model.log_to_tensorboard(tag=tag_mem, group='SystemStats',
-                                                                                      value=gpu_memory[i],
-                                                                                      index=iter[name_agent])
-                                    agent_this_drone.network_model.log_to_tensorboard(tag=tag_util, group='SystemStats',
-                                                                                      value=gpu_utilization[i],
-                                                                                      index=iter[name_agent])
-                                agent_this_drone.network_model.log_to_tensorboard(tag='Memory-GB', group='SystemStats',
-                                                                                  value=sys_memory,
-                                                                                  index=iter[name_agent])
+                                    #agent_this_drone.network_model.log_to_tensorboard(tag=tag_mem, group='SystemStats',
+                                                                                      #value=gpu_memory[i],
+                                                                                      #index=iter[name_agent])
+                                    #agent_this_drone.network_model.log_to_tensorboard(tag=tag_util, group='SystemStats',
+                                                                                      #value=gpu_utilization[i],
+                                                                                      #index=iter[name_agent])
+                                #agent_this_drone.network_model.log_to_tensorboard(tag='Memory-GB', group='SystemStats',
+                                                                                  #value=sys_memory,
+                                                                                  #index=iter[name_agent])
 
                                 s_log = '{:<6s} - Level {:>2d} - Iter: {:>6d}/{:<5d} {:<8s}-{:>5s} lr: {:>1.8f} Ret = {:>+6.4f} Last Crash = {:<5d} t={:<1.3f} SF = {:<5.4f}  Reward: {:<+1.4f}  '.format(
                                     name_agent,

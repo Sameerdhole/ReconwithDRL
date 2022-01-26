@@ -354,15 +354,15 @@ def DeepPPG(cfg, env_process, env_folder):
                                 for i in range(0, len(gpu_memory)):
                                     tag_mem = 'GPU' + str(i) + '-Memory-GB'
                                     tag_util = 'GPU' + str(i) + 'Utilization-%'
-                                    agent_this_drone.network_model.log_to_tensorboard(tag=tag_mem, group='SystemStats',
+                                    agent[name_agent].network_model.log_to_tensorboard(tag=tag_mem, group=name_agent,
                                                                                       value=gpu_memory[i],
-                                                                                      index=iter[name_agent])
-                                    agent_this_drone.network_model.log_to_tensorboard(tag=tag_util, group='SystemStats',
+                                                                                      index=epi_num[name_agent])
+                                    agent[name_agent].network_model.log_to_tensorboard(tag=tag_util, group=name_agent,
                                                                                       value=gpu_utilization[i],
-                                                                                      index=iter[name_agent])
-                                    agent_this_drone.network_model.log_to_tensorboard(tag='Memory-GB', group='SystemStats',
+                                                                                      index=epi_num[name_agent])
+                                    agent[name_agent].network_model.log_to_tensorboard(tag='Memory-GB', group=name_agent,
                                                                                   value=sys_memory,
-                                                                                  index=iter[name_agent])
+                                                                                  index=epi_num[name_agent])
 
                                 s_log = '{:<6s} - Level {:>2d} - Iter: {:>6d}/{:<5d} {:<8s}-{:>5s} lr: {:>1.8f} Ret = {:>+6.4f} Last Crash = {:<5d} t={:<1.3f} SF = {:<5.4f}  Reward: {:<+1.4f}  '.format(
                                         name_agent,int(level[name_agent]),iter[name_agent],epi_num[name_agent],action_word,action_type,
