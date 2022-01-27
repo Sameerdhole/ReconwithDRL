@@ -3,7 +3,7 @@ import numpy as np
 import glob
  
 img_array = []
-for filename in glob.glob('C:/Users/prani/Documents/AirSim/2021-12-13-20-50-40/images/*.png'):
+for filename in glob.glob('C:/Users/prani/Documents/AirSim/2021-12-27-13-58-19/images/*.png'):
     img = cv2.imread(filename)
     height, width, layers = img.shape
     size = (width,height)

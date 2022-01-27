@@ -271,16 +271,19 @@ def get_img(client,vehicle_name):
     return image
 
 def get_depth_img(client,vehicle_name):
-    responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.DepthPlanner,
-    pixels_as_float=True, compress=False),
-    airsim.ImageRequest("1", airsim.ImageType.DepthPerspective, False, False)])
-    color = responses[1]
-    imgcolor = np.fromstring(color.image_data_uint8, dtype=np.uint8)
-    imgcolor = imgcolor.reshape(responses[1].height, responses[1].width, -1)
-    if imgcolor.shape[2] == 4:
-        imgcolor = cv2.cvtColor(imgcolor,cv2.COLOR_RGBA2BGR)
-    image = Image.fromarray(imgcolor)
-    return image
+    responses1 = client.simGetImages([
+        airsim.ImageRequest('front_center', airsim.ImageType.DepthPlanner, False,
+                            False)], vehicle_name=vehicle_name)  # scene vision image in uncompressed RGBA array
+
+    response = responses1[0]
+    img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)  # get numpy array
+    img_rgba = img1d.reshape(response.height, response.width, 3)
+    img = Image.fromarray(img_rgba)
+    #img_rgb = img.convert('RGB')
+    camera_image_rgb = np.asarray(img)
+    camera_image = camera_image_rgb
+
+    return camera_image
 
 
 def get_imu(client,vehicle_name):
@@ -654,6 +657,8 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
 #        td_targ = np.zeros(shape=(episode_len,1))
 #        p_a = np.zeros(shape=(episode_len,1))
     curr_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+    #next_states = np.zeros(shape=(episode_len, input_size, input_size, 3))
+
     actions = np.zeros(shape=(episode_len, 1), dtype=int)
     TD_target = np.zeros(shape=(episode_len,1))
     p_a = np.zeros(shape=(episode_len,1))
@@ -662,9 +667,8 @@ def train_AUX(algorithm_cfg, agent, lr, input_size, gamma, epi_num, buff, name_a
         curr_states, actions, TD_target, p_a = buff[k]
         
         V_s = agent.network_model.get_policy_state_value(curr_states)
-       
-        #V_s_ = agent.network_model.get_state_value(next_states)
-        #TD_target = rewards + gamma*V_s_* crashes
+        #V_s_ = agent.network_model.get_state_value(curr_states)
+        #TD_target_p = rewards + gamma*V_s_* crashes
         delta = TD_target - V_s
         GAE_array = []
         GAE=0

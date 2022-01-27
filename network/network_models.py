@@ -195,11 +195,11 @@ class initialize_network_DeepPPO():
 
         return action.astype(int)
 
-    '''def log_to_tensorboard(self, tag, group, value, index):
+    def log_to_tensorboard(self, tag, group, value, index):
         summary = tf.Summary()
         tag = group + '/' + tag
         summary.value.add(tag=tag, simple_value=value)
-        self.stat_writer.add_summary(summary, index)'''
+        self.stat_writer.add_summary(summary, index)
 
     def save_network(self, save_path, episode=''):
         save_path = save_path + self.vehicle_name + '/' + self.vehicle_name + '_' + str(episode)
@@ -289,7 +289,7 @@ class initialize_network_DeepPPG():
             self.L_v = 0.5*mse_loss(self.state_value, self.TD_target)
             
             #KL Loss(yet to be written correctly)
-            #self.kl=kl_loss(self.pi, self.prob_old)
+            #self.kl=tf.reduce_mean(self.pi_a*tf.log(self.ratio))
             
             #Ljoint
             self.L_joint = self.L_aux + self.loss_actor_op
@@ -302,15 +302,15 @@ class initialize_network_DeepPPG():
             
             #Policy(E_pi) OP
             self.E_pi_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
-                self.L_pi, name="train_main")
+                self.L_pi)
             
             #Value(E_v) OP
             self.E_v_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
-                self.L_v, name="train_main")
+                self.L_v)
             
             #L_joint OP
             self.E_joint_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.99).minimize(
-                self.L_joint, name="train_main")
+                self.L_joint)
 
 
             self.sess = tf.InteractiveSession()
@@ -441,7 +441,7 @@ class initialize_network_DeepPPG():
 
         #optimize L_pi
         for m in range(E_pi):
-            _,L_pi,L_clip,L_entrop, ProbActions = self.sess.run([L_pi_eval,L_p,self.loss_actor_op,self.loss_entropy , predict_eval],
+            _,L_policy,L_clip,L_entrop, ProbActions = self.sess.run([L_pi_eval,L_p,self.loss_actor_op,self.loss_entropy , predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
@@ -451,7 +451,7 @@ class initialize_network_DeepPPG():
 
         #optimize L_v
         for n in range(E_v):
-            _,L_v,state_value = self.sess.run([L_v_eval,self.L_v,predict_state],
+            _,L_val = self.sess.run([L_v_eval,self.L_v],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.TD_target: TD_target
@@ -459,9 +459,9 @@ class initialize_network_DeepPPG():
       
 
         # Log to tensorboard
-        self.log_to_tensorboard(tag='Policy_Loss', group=self.vehicle_name, value=LA.norm(L_pi) / batch_size,
+        self.log_to_tensorboard(tag='Policy_Loss', group=self.vehicle_name, value=LA.norm(L_policy) / batch_size,
                                 index=self.iter_policy)
-        self.log_to_tensorboard(tag='Value_Loss', group=self.vehicle_name, value=LA.norm(L_v) / batch_size,
+        self.log_to_tensorboard(tag='Value_Loss', group=self.vehicle_name, value=LA.norm(L_val) / batch_size,
                                 index=self.iter_policy)
         
         self.log_to_tensorboard(tag='Learning Rate', group=self.vehicle_name, value=lr, index=self.iter_policy)
@@ -494,8 +494,6 @@ class initialize_network_DeepPPG():
 
         self.iter_policy += 1
         batch_size = xs.shape[0]
-        L_j=self.L_joint
-        predict_eval = self.pi
         L_j_eval=self.E_joint_op
         predict_eval = self.pi
         predict_state = self.state_value
@@ -505,7 +503,7 @@ class initialize_network_DeepPPG():
 
         #optimize L_pi
         
-        _,L_jo,L_a,L_clip, statepi , probactions = self.sess.run([L_j_eval,L_j,self.L_aux, self.loss_actor_op, predict_statepi,predict_eval],
+        _,L_jo,L_a,L_clip, p_statepi= self.sess.run([L_j_eval,self.L_joint,self.L_aux, self.loss_actor_op, predict_statepi],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
@@ -514,7 +512,7 @@ class initialize_network_DeepPPG():
                                                         self.GAE: GAE})
         #optimize L_v
         
-        _,L_v, state_value = self.sess.run([L_v_eval,self.L_v, predict_state],
+        _,L_val = self.sess.run([L_v_eval,self.L_v],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.TD_target: TD_target

@@ -142,7 +142,8 @@ class PedraAgent():
 
     def get_state(self):
 
-        camera_image = get_MonocularImageRGB(self.client, self.vehicle_name)
+        camera_image = get_depth_img(self.client, self.vehicle_name)
+        
         self.iter = self.iter + 1
         state = cv2.resize(camera_image, (self.input_size, self.input_size), cv2.INTER_LINEAR)
         state = cv2.normalize(state, state, 0, 1, cv2.NORM_MINMAX, cv2.CV_32F)
