@@ -256,12 +256,12 @@ class initialize_network_DeepPPG():
             self.D_target = tf.placeholder(tf.float32, shape=[None, 1], name='D_target')
             # Select the deep network
 
-            self.model_pi = C3F2_Actor(self.X,cfg.num_actions,cfg.train_fc)
-            self.model_v = C3F2_Critic(self.X,cfg.num_actions,cfg.train_fc)
-            #self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc) 
-            self.pi = self.model_pi.action_probs
-            self.policy_values=self.model_pi.action_policy_value
-            self.state_value = self.model_v.state_value
+            #self.model_pi = C3F2_Actor(self.X,cfg.num_actions,cfg.train_fc)
+            #self.model_v = C3F2_Critic(self.X,cfg.num_actions,cfg.train_fc)
+            self.model = C3F2_ActorCriticShared(self.X, cfg.num_actions, cfg.train_fc) 
+            self.pi = self.model.action_probs
+            #self.policy_values=self.model_pi.action_policy_value
+            self.state_value = self.model.state_value
 
             self.old_pi = self.pi
 
@@ -283,7 +283,7 @@ class initialize_network_DeepPPG():
             self.L_pi=self.loss_actor_op+self.loss_entropy*self.beta_s
             
             #L aux auxilary objective/L_value
-            self.L_aux = 0.5*mse_loss(self.policy_values, self.TD_target)
+            self.L_aux = 0.5*mse_loss(self.state_value, self.TD_target)
 
             #Value Loss
             self.L_v = 0.5*mse_loss(self.state_value, self.TD_target)
@@ -451,7 +451,7 @@ class initialize_network_DeepPPG():
 
         #optimize L_v
         for n in range(E_v):
-            _,L_val = self.sess.run([L_v_eval,self.L_v],
+            _,L_val,p_state = self.sess.run([L_v_eval,self.L_v,predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.TD_target: TD_target
@@ -497,13 +497,13 @@ class initialize_network_DeepPPG():
         L_j_eval=self.E_joint_op
         predict_eval = self.pi
         predict_state = self.state_value
-        predict_statepi = self.policy_values
+        #predict_statepi = self.policy_values
         L_v_eval=self.E_v_op
 
 
         #optimize L_pi
         
-        _,L_jo,L_a,L_clip, p_statepi= self.sess.run([L_j_eval,self.L_joint,self.L_aux, self.loss_actor_op, predict_statepi],
+        _,L_jo,L_a,L_clip, p_state,probs= self.sess.run([L_j_eval,self.L_joint,self.L_aux, self.loss_actor_op, predict_state,predict_eval],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.actions: actions,
@@ -512,7 +512,7 @@ class initialize_network_DeepPPG():
                                                         self.GAE: GAE})
         #optimize L_v
         
-        _,L_val = self.sess.run([L_v_eval,self.L_v],
+        _,L_val,p_state = self.sess.run([L_v_eval,self.L_v,predict_state],
                                              feed_dict={self.batch_size: xs.shape[0], self.learning_rate: lr,
                                                         self.X1: xs,
                                                         self.TD_target: TD_target
