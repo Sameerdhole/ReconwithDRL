@@ -1,4 +1,5 @@
 import sys, cv2
+import csv
 import nvidia_smi
 from network.agent import PedraAgent
 from unreal_envs.initial_positions import *
@@ -74,7 +75,7 @@ def DeepPPG(cfg, env_process, env_folder):
 
     elif cfg.mode == 'infer':
         iter = 1
-        #my_yolo = YOLO()
+        my_yolo = YOLO()
         
         #MAPPING PARAMS
         '''imagefolder = "C:/Users/prani/Desktop/ReconwithDRL/mapping/dataset"
@@ -84,7 +85,7 @@ def DeepPPG(cfg, env_process, env_folder):
             os.makedirs(imagefolder_rgb)
         if not os.path.exists(imagefolder_depth):
             os.makedirs(imagefolder_depth)
-
+        
         frame_id = 0
         #imutxtloc = imagefolder[:-3] + "imudata.txt"
         rgb_timestamptxtloc = imagefolder + "/rgb.txt"
@@ -102,7 +103,10 @@ def DeepPPG(cfg, env_process, env_folder):
         depth_timestamptextfile.write("# depth maps\n# timestamp filename\n")
         accelerometertextfile.write("# accelerometer data\n# timestamp ax ay az\n")
         groundtruthtextfile.write("# ground truth trajectory\n# timestamp tx ty tz qx qy qz qw\n")'''
-        
+        f = open("C:/Users/prani/Desktop/ReconwithDRL/od_results.csv",'w')
+        od_writer = csv.writer(f)
+        od_writer.writerow(["predicted_class","predicted_score"])
+
         def detect_image(self,img):
             return self.my_yolo.detect_image(img)
         name_agent = 'drone0'
@@ -437,17 +441,17 @@ def DeepPPG(cfg, env_process, env_folder):
 
 ############################################Object detection########################################################
                         
-                            '''img=agent[name_agent].get_imgfrod(agent[name_agent],0)
+                            img=agent[name_agent].get_imgfrod(agent[name_agent],0)
 
 
 
-                            result = my_yolo.detect_image(img)
-                            
+                            result,max_class,max_score = my_yolo.detect_image(img)
+                            od_writer.writerow([max_class,max_score])
                             result = np.asarray(result)
-
+                            
                             result = image_resize(result)
 
-                            cv2.imshow("result", result)'''
+                            cv2.imshow("result", result)
 
 ################################################################################################################
 ############################################ Mapping ############################################################
@@ -563,8 +567,9 @@ def DeepPPG(cfg, env_process, env_folder):
                 automate = False
                 print('Hit r and then backspace to start from this point')
 
-        '''if cfg.mode == 'infer':
-            rgb_timestamptextfile.close()
+        if cfg.mode == 'infer':
+            f.close()
+        '''    rgb_timestamptextfile.close()
             depth_timestamptextfile.close()
             groundtruthtextfile.close()
             accelerometertextfile.close()'''
